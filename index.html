@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Υπολογιστής Διατομής Καλωδίου</title>
+<style>
+  :root{
+    --bg:#0f1419; --card:#1a2129; --card2:#222b35; --line:#2e3a47;
+    --fg:#e6edf3; --muted:#8b98a5; --accent:#4da3ff; --accent2:#1f6feb;
+    --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,#0b0f14,#131b24);color:var(--fg);min-height:100vh;padding:24px 14px 60px}
+  .wrap{max-width:920px;margin:0 auto;position:relative}
+  .lang{position:absolute;top:0;right:0;display:flex;gap:3px;background:var(--card2);
+    border:1px solid var(--line);border-radius:9px;padding:3px;z-index:5}
+  .lang button{background:none;border:none;color:var(--muted);padding:5px 11px;border-radius:6px;
+    cursor:pointer;font-size:.8rem;font-weight:600;letter-spacing:.03em;transition:.15s}
+  .lang button:hover{color:var(--fg)}
+  .lang button.on{background:var(--accent2);color:#fff}
+  header{text-align:center;margin-bottom:26px}
+  h1{font-size:1.6rem;margin:0 0 6px;font-weight:650}
+  header p{margin:0;color:var(--muted);font-size:.92rem}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  @media(max-width:520px){
+    .lang{position:static;margin:0 auto 14px;width:max-content}
+  }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;
+    box-shadow:0 8px 24px rgba(0,0,0,.28)}
+  .card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
+    margin:0 0 16px;font-weight:600}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px}
+  .hint{font-size:.72rem;color:var(--muted);margin-top:4px;line-height:1.4}
+  .field input,.field select{width:100%;padding:10px 11px;background:var(--card2);border:1px solid var(--line);
+    border-radius:9px;color:var(--fg);font-size:.95rem;outline:none;transition:border .15s}
+  .field input:focus,.field select:focus{border-color:var(--accent)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .seg{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{flex:1;padding:9px;background:none;border:none;color:var(--muted);font-size:.86rem;
+    cursor:pointer;transition:.15s}
+  .seg button.on{background:var(--accent2);color:#fff;font-weight:600}
+  .result{background:linear-gradient(150deg,#16202b,#1b2836);border:1px solid var(--line)}
+  .big{font-size:2.6rem;font-weight:700;line-height:1;color:var(--accent)}
+  .big small{font-size:1rem;color:var(--muted);font-weight:500;margin-left:4px}
+  .verdict{margin:4px 0 18px;font-size:.9rem;color:var(--muted)}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:.9rem}
+  .kv span:first-child{color:var(--muted)}
+  .kv span:last-child{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.75rem;font-weight:600}
+  .b-ok{background:rgba(63,185,80,.15);color:var(--ok)}
+  .b-warn{background:rgba(210,153,34,.15);color:var(--warn)}
+  .b-bad{background:rgba(248,81,73,.15);color:var(--bad)}
+  .bar{height:8px;border-radius:5px;background:var(--card2);overflow:hidden;margin-top:6px}
+  .bar>i{display:block;height:100%;border-radius:5px;transition:width .3s}
+  footer{text-align:center;margin-top:28px;font-size:.8rem;color:var(--muted)}
+  footer a{color:var(--accent);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  .note{font-size:.78rem;color:var(--muted);margin-top:16px;line-height:1.5}
+  .steps{font-size:.85rem;line-height:1.7;color:#c3ccd6;margin:0;padding-left:18px}
+  .steps b{color:var(--fg)}
+  .or{display:flex;align-items:center;gap:10px;font-size:.74rem;color:var(--muted);margin:-2px 0 10px}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .field input.auto{border-style:dashed;color:var(--muted);background:transparent}
+  .limits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+  @media(max-width:420px){.limits{grid-template-columns:1fr}}
+  .lim .sub{font-size:.75rem;color:var(--muted);margin-top:1px}
+  .lim{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card2);opacity:.6}
+  .lim.crit{opacity:1;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:rgba(77,163,255,.14)}
+  .lim .t{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .lim .v{font-size:1.35rem;font-weight:700;margin-top:2px}
+  .lim .tag{visibility:hidden;margin-top:4px;font-size:.7rem;font-weight:700;color:var(--accent)}
+  .lim.crit .tag{visibility:visible}
+  details.more{margin-top:4px;border-top:1px solid var(--line);padding-top:12px}
+  details.more summary{cursor:pointer;color:var(--muted);font-size:.82rem;font-weight:600;
+    list-style:none;user-select:none;margin-bottom:12px}
+  details.more summary::-webkit-details-marker{display:none}
+  details.more summary::before{content:"▸ ";display:inline-block;width:1em}
+  details.more[open] summary::before{content:"▾ "}
+  details.more summary:hover{color:var(--fg)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="lang" id="lang">
+    <button data-l="en" class="on">EN</button>
+    <button data-l="el">ΕΛ</button>
+  </div>
+
+  <header>
+    <h1 data-i18n="title">Cable Size Calculator</h1>
+    <p data-i18n="subtitle">Voltage-drop &amp; current-carrying capacity sizing</p>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2 data-i18n="h_inputs">Inputs</h2>
+
+      <div class="field">
+        <label data-i18n="lbl_voltage">Voltage (V)</label>
+        <input id="voltage" type="number" value="230" min="1" step="any">
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label data-i18n="lbl_current">Current (A)</label>
+          <input id="current" type="number" value="32" min="0.1" step="any">
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_power">Power (kW)</label>
+          <input id="power" type="number" value="7.36" min="0.001" step="any">
+        </div>
+      </div>
+      <div class="hint" style="margin:-6px 0 13px" data-i18n="hint_load">Enter either current or power; the other is calculated.</div>
+
+      <div class="row">
+        <div class="field">
+          <label data-i18n="lbl_distance">Cable length (m)</label>
+          <input id="length" type="number" value="45" min="0.1" step="any">
+          <div class="hint" data-i18n="hint_distance">One way, source to load (not the round trip).</div>
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_drop">Max voltage drop (%)</label>
+          <input id="drop" type="number" value="3" min="0.1" step="any">
+        </div>
+      </div>
+
+      <div class="field">
+          <label data-i18n="lbl_method">Installation method</label>
+        <select id="method">
+          <option value="A" data-i18n="opt_A">A — in conduit in a thermally insulated wall</option>
+          <option value="B" data-i18n="opt_B">B — in conduit or trunking on a wall</option>
+          <option value="C" selected data-i18n="opt_C">C — clipped direct to a wall</option>
+          <option value="E" data-i18n="opt_E">E — in free air / on a perforated tray</option>
+          <option value="D" data-i18n="opt_D">D — buried, in a duct</option>
+        </select>
+      </div>
+
+      <details class="more">
+        <summary data-i18n="more">Other options</summary>
+      <div class="row">
+        <div class="field">
+          <label data-i18n="lbl_conductor">Conductor</label>
+          <select id="material">
+            <option value="cu" data-i18n="opt_cu">Copper</option>
+            <option value="al" data-i18n="opt_al">Aluminium</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label data-i18n="lbl_condtemp">Insulation (max. conductor temp)</label>
+          <select id="condtemp">
+            <option value="70" selected data-i18n="opt_pvc">PVC — 70 °C</option>
+            <option value="90" data-i18n="opt_xlpe">XLPE / EPR — 90 °C</option>
+          </select>
+        </div>
+        <div class="field">
+          <label id="ambLbl" data-i18n="lbl_ambient">Ambient temp (°C)</label>
+          <input id="ambient" type="number" value="30" step="any">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label data-i18n="lbl_pf">Power factor (cos φ)</label>
+          <input id="pf" type="number" value="1" min="0.1" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label data-i18n="lbl_breaker">Breaker rating In (A)</label>
+          <select id="breaker">
+            <option value="auto" data-i18n="opt_auto">Auto</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="lbl_grouping">Circuits bunched together</label>
+        <select id="grouping">
+          <option value="1.0">1</option>
+          <option value="0.8">2</option>
+          <option value="0.7">3</option>
+          <option value="0.65">4</option>
+          <option value="0.6">5</option>
+          <option value="0.57">6</option>
+        </select>
+      </div>
+      </details>
+    </div>
+
+    <div class="card result">
+      <h2 data-i18n="h_result">Result</h2>
+      <div class="verdict" id="verdict"></div>
+
+      <div class="limits">
+        <div class="lim" id="limDrop">
+          <div class="t" data-i18n="kv_vdrop">Voltage-drop limit</div>
+          <div class="v"><span id="vdropSize">—</span></div>
+          <div class="tag" data-i18n="critical">✓ Sets the cable size</div>
+        </div>
+        <div class="lim" id="limAmp">
+          <div class="t" data-i18n="kv_amp">Current-capacity limit</div>
+          <div class="v"><span id="ampSize">—</span></div>
+          <div class="sub" id="ampIb"></div>
+          <div class="tag" data-i18n="critical">✓ Sets the cable size</div>
+        </div>
+        <div class="lim" id="limBrk">
+          <div class="t" data-i18n="kv_brk">Breaker limit</div>
+          <div class="v"><span id="brkSize">—</span></div>
+          <div class="sub" id="brkIn"></div>
+          <div class="tag" data-i18n="critical">✓ Sets the cable size</div>
+        </div>
+      </div>
+
+      <div class="kv"><span data-i18n="kv_drop">Voltage drop at selected size</span><span id="actualDrop">—</span></div>
+      <div class="kv"><span data-i18n="kv_loadV">Voltage at load</span><span id="loadV">—</span></div>
+      <div class="kv"><span data-i18n="kv_iz">Current-carrying capacity (Iz)</span><span id="capacity">—</span></div>
+      <div class="kv"><span data-i18n="kv_util">Utilisation (I ÷ Iz)</span><span id="util">—</span></div>
+      <div class="bar"><i id="bar" style="width:0%;background:var(--ok)"></i></div>
+      <div class="kv"><span data-i18n="kv_loss">Power loss in cable (approx.)</span><span id="loss">—</span></div>
+      <div class="kv"><span data-i18n="kv_res">Conductor resistance</span><span id="res">—</span></div>
+
+      <div class="note" data-i18n-html="note">Current-carrying capacity from BS 7671 Appendix 4.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2 data-i18n="h_how">How it was calculated</h2>
+    <ol class="steps" id="steps">
+      <li data-i18n="step1">Compute the allowable voltage drop in volts.</li>
+      <li data-i18n="step2">Find the minimum cross-sectional area from the voltage-drop formula.</li>
+      <li data-i18n="step3">Find the minimum size that can carry the current (tabulated rating ÷ correction factors).</li>
+      <li data-i18n="step4">Pick the larger requirement and round up to the next standard cable size.</li>
+    </ol>
+  </div>
+
+  <footer>Made by <a href="https://github.com/ppanag" target="_blank" rel="noopener">Panux</a></footer>
+</div>
+
+<script>
+// Hard cap: no cable larger than 100 mm². The largest standard size ≤ 100 mm² is 95 mm².
+const MAX_SIZE = 95;
+const SIZES = [1.5,2.5,4,6,10,16,25,35,50,70,95];
+
+// Current-carrying capacity (A), copper, one two-core cable, single-phase AC or DC,
+// 30 °C air / 20 °C ground, for SIZES (1.5 … 95 mm²). Verified against BS 7671:2018 reprints.
+// 70 = PVC: methods A/B/C/E Table 4D2A cols 2/4/6/8; D = Table 4D4A (armoured) D1, ducts in ground.
+// 90 = XLPE: methods A/B/C/E Table 4E2A cols 2/4/6/8; D = Table 4E4A (armoured) D1.
+const AMP = {
+  70:{A:[14,18.5,25,32,43,57,75,92,110,139,167],
+      B:[16.5,23,30,38,52,69,90,111,133,168,201],
+      C:[19.5,27,36,46,63,85,112,138,168,213,258],
+      E:[22,30,40,51,70,94,119,148,180,232,282],
+      D:[22,29,37,46,60,78,99,119,140,173,204]},
+  90:{A:[18.5,25,33,42,57,76,99,121,145,183,220],
+      B:[22,30,40,51,69,91,119,146,175,221,265],
+      C:[24,33,45,58,80,107,138,171,209,269,328],
+      E:[26,36,49,63,86,115,149,185,225,289,352],
+      D:[25,33,43,53,71,91,116,139,164,203,239]}
+};
+// Aluminium: approximated as 0.78 × copper (no Al table built in), and only from 16 mm²,
+// the smallest aluminium size BS 7671 tabulates.
+const AL_FACTOR = 0.78, AL_MIN = 16;
+// Standard breaker ratings (EN 60898 MCBs to 125 A, then common MCCB frames)
+const BREAKERS = [6,10,13,16,20,25,32,40,50,63,80,100,125,160,200,250];
+
+// IEC 60364-5-52 Annex G design resistivity at 70 °C (Ω·mm²/m) and temperature coefficient
+const RHO70 = {cu:0.0225, al:0.036};
+const ALPHA = {cu:0.00393, al:0.00403};
+
+// ---------------- i18n ----------------
+const I18N = {
+  en:{
+    kv_brk:'Breaker limit', lbl_pf:'Power factor (cos φ)', lbl_breaker:'Breaker rating In (A)', opt_auto:'Auto', verdict_brk:'Breaker {b} A is below the load current {i} A', step_brk:'Breaker: In = <b>{b} A</b> (≥ {i} A); {b} A ÷ {d} = <b>{req} A</b> tabulated rating required → smallest size <b>{sz} mm²</b> (tabulated {it} A)',
+    title:'Cable Size Calculator',
+    subtitle:'Voltage-drop & current-carrying capacity sizing',
+    h_inputs:'Inputs', h_result:'Result', h_how:'How it was calculated',
+    lbl_power:'Power (kW)', hint_load:'Enter either current or power; the other is calculated (power factor under Other options).', critical:'✓ Sets the cable size', more:'Other options',
+    lbl_voltage:'Voltage (V)', lbl_current:'Current (A)',
+    lbl_distance:'Cable length (m)',
+    hint_distance:'One way, source to load (not the round trip).',
+    lbl_drop:'Max voltage drop (%)',
+    lbl_conductor:'Conductor', opt_cu:'Copper', opt_al:'Aluminium',
+    lbl_method:'Installation method',
+    opt_A:'A — in conduit in a thermally insulated wall',
+    opt_B:'B — in conduit or trunking on a wall',
+    opt_C:'C — clipped direct to a wall',
+    opt_E:'E — in free air / on a perforated tray',
+    opt_D:'D — buried, in a duct',
+    lbl_condtemp:'Insulation (max. conductor temp)', opt_pvc:'PVC — 70 °C', opt_xlpe:'XLPE / EPR — 90 °C',
+    lbl_ambient:'Ambient temp (°C)', lbl_ground:'Ground temp (°C)',
+    verdict_temp:'No rating at {t} °C for this insulation — choose a higher-temperature insulation or a cooler route', lbl_grouping:'Circuits bunched together', kv_drop:'Voltage drop at selected size', kv_loadV:'Voltage at load',
+    kv_vdrop:'Voltage-drop limit', kv_amp:'Current-capacity limit',
+    kv_iz:'Current-carrying capacity (Iz)', kv_util:'Utilisation (I ÷ Iz)',
+    kv_loss:'Power loss in cable (approx.)', kv_res:'Conductor resistance',
+    note:'Current-carrying capacity from BS 7671:2018 Appendix 4, one two-core cable (single-phase AC or DC): <b>Table 4D2A</b> (PVC, 70 °C) or <b>Table 4E2A</b> (XLPE, 90 °C), copper conductors, non-armoured; buried cables use <b>Tables 4D4A / 4E4A</b> method D1 (armoured, in ducts). Air temperature factors Table 4B1 (reference 30 °C), ground temperature factors Table 4B2 (reference 20 °C), grouping Table 4C1. Aluminium is approximated as 0.78 × copper, from 16 mm². Voltage drop uses IEC 60364-5-52 Annex G design resistivity (0.0225 Ω·mm²/m Cu, 0.036 Ω·mm²/m Al), within ±5% of BS 7671 Tables 4D2B / 4E2B. Resistance only; reactance is ignored. Maximum size 95 mm². Verify against local regulations.',
+    step1:'Compute the allowable voltage drop in volts.',
+    step2:'Find the minimum cross-sectional area from the voltage-drop formula.',
+    step3:'Find the minimum size that can carry the current (tabulated rating ÷ correction factors).',
+    step4:'Pick the larger requirement and round up to the next standard cable size.',
+    verdict_cap:'Exceeds {m} mm² — use parallel cables or reduce the load / length',
+    step_allowed:'Allowed drop: <b>{vd} V</b> ({pct}% of {v} V)',
+    step_rho:'ρ at {t} °C = <b>{rho}</b> Ω·mm²/m (IEC design value)',
+    step_area:'{eq} → <b>{a} mm²</b> → {size} mm²',
+    step_amp:'Current capacity: {i} A ÷ {d} (correction factors) = <b>{req} A</b> tabulated rating required; method {m} → smallest size <b>{amp} mm²</b> (tabulated {itAmp} A)',
+    step_final:'The largest of the three sizes governs → <b>{ch} mm²</b>'
+  },
+  el:{
+    kv_brk:'Κριτήριο διάταξης προστασίας', lbl_pf:'Συντελεστής ισχύος (συνφ)', lbl_breaker:'Διάταξη προστασίας In (A)', opt_auto:'Αυτόματα', verdict_brk:'Η διάταξη προστασίας {b} A είναι μικρότερη από το ρεύμα φορτίου {i} A', step_brk:'Διάταξη προστασίας: In = <b>{b} A</b> (≥ {i} A)· {b} A ÷ {d} = <b>{req} A</b> απαιτούμενη τιμή πίνακα → ελάχιστη διατομή <b>{sz} mm²</b> (τιμή πίνακα {it} A)',
+    title:'Υπολογιστής Διατομής Καλωδίου',
+    subtitle:'Διαστασιολόγηση με κριτήρια πτώσης τάσης και μέγιστου επιτρεπόμενου ρεύματος',
+    h_inputs:'Δεδομένα', h_result:'Αποτέλεσμα', h_how:'Πώς υπολογίστηκε',
+    lbl_power:'Ισχύς (kW)', hint_load:'Συμπληρώστε ένταση ή ισχύ· η άλλη τιμή υπολογίζεται αυτόματα (συντελεστής ισχύος στις Άλλες επιλογές).', critical:'✓ Καθορίζει τη διατομή', more:'Άλλες επιλογές',
+    lbl_voltage:'Τάση (V)', lbl_current:'Ένταση ρεύματος (A)',
+    lbl_distance:'Μήκος καλωδίου (m)',
+    hint_distance:'Μήκος μίας διαδρομής, από την πηγή έως το φορτίο (όχι μετ’ επιστροφής).',
+    lbl_drop:'Μέγιστη πτώση τάσης (%)',
+    lbl_conductor:'Αγωγός', opt_cu:'Χαλκός', opt_al:'Αλουμίνιο',
+    lbl_method:'Τρόπος εγκατάστασης',
+    opt_A:'A — σε σωλήνα, εντοιχισμένο σε θερμομονωμένο τοίχο',
+    opt_B:'B — σε σωλήνα ή κανάλι, επιτοίχια',
+    opt_C:'C — επιτοίχια, στερεωμένο απευθείας στον τοίχο',
+    opt_E:'E — ελεύθερα στον αέρα / σε διάτρητο φορέα καλωδίων',
+    opt_D:'D — στο έδαφος, μέσα σε σωλήνα',
+    lbl_condtemp:'Υλικό μόνωσης (μέγ. θερμοκρασία αγωγού)', opt_pvc:'PVC — 70 °C', opt_xlpe:'XLPE / EPR — 90 °C',
+    lbl_ambient:'Θερμοκρασία περιβάλλοντος (°C)', lbl_ground:'Θερμοκρασία εδάφους (°C)',
+    verdict_temp:'Δεν προβλέπεται μέγιστο επιτρεπόμενο ρεύμα στους {t} °C για αυτό το υλικό μόνωσης — επιλέξτε μόνωση υψηλότερης θερμοκρασίας ή ψυχρότερη διαδρομή', lbl_grouping:'Πλήθος ομαδοποιημένων κυκλωμάτων', kv_drop:'Πτώση τάσης στην επιλεγμένη διατομή',
+    kv_loadV:'Τάση στο φορτίο',
+    kv_vdrop:'Κριτήριο πτώσης τάσης', kv_amp:'Κριτήριο επιτρεπόμενου ρεύματος',
+    kv_iz:'Μέγιστο επιτρεπόμενο ρεύμα (Iz)',
+    kv_util:'Ποσοστό φόρτισης (I ÷ Iz)',
+    kv_loss:'Απώλειες ισχύος στο καλώδιο (περίπου)', kv_res:'Αντίσταση αγωγού',
+    note:'Μέγιστο επιτρεπόμενο ρεύμα από το BS 7671:2018, Παράρτημα 4, για ένα διπολικό καλώδιο (μονοφασικό AC ή DC): <b>Πίνακας 4D2A</b> (PVC, 70 °C) ή <b>Πίνακας 4E2A</b> (XLPE, 90 °C), χάλκινοι αγωγοί, χωρίς οπλισμό· για καλώδια στο έδαφος <b>Πίνακες 4D4A / 4E4A</b>, τρόπος εγκατάστασης D1 (οπλισμένο, μέσα σε σωλήνα). Συντελεστές διόρθωσης θερμοκρασίας αέρα: Πίνακας 4B1 (αναφορά 30 °C)· θερμοκρασίας εδάφους: Πίνακας 4B2 (αναφορά 20 °C)· ομαδοποίησης: Πίνακας 4C1. Για το αλουμίνιο λαμβάνεται κατά προσέγγιση 0,78 × χαλκός, από 16 mm². Η πτώση τάσης υπολογίζεται με την ειδική αντίσταση σχεδιασμού του IEC 60364-5-52, Παράρτημα G (0,0225 Ω·mm²/m Cu, 0,036 Ω·mm²/m Al), με απόκλιση έως ±5% από τους Πίνακες 4D2B / 4E2B του BS 7671. Λαμβάνεται υπόψη μόνο η ωμική αντίσταση· η επαγωγική αντίσταση αγνοείται. Μέγιστη διατομή 95 mm².',
+    step1:'Υπολογισμός της επιτρεπόμενης πτώσης τάσης σε V.',
+    step2:'Εύρεση της ελάχιστης διατομής από τον τύπο της πτώσης τάσης.',
+    step3:'Εύρεση της ελάχιστης διατομής που αντέχει το ρεύμα (τιμή πίνακα ÷ συντελεστές διόρθωσης).',
+    step4:'Επιλογή της μεγαλύτερης απαίτησης και στρογγυλοποίηση στην επόμενη τυποποιημένη διατομή.',
+    verdict_cap:'Υπερβαίνει τα {m} mm² — χρησιμοποιήστε παράλληλα καλώδια ή μειώστε το φορτίο / το μήκος',
+    step_allowed:'Επιτρεπόμενη πτώση τάσης: <b>{vd} V</b> ({pct}% των {v} V)',
+    step_rho:'ρ στους {t} °C = <b>{rho}</b> Ω·mm²/m (τιμή σχεδιασμού IEC)',
+    step_area:'{eq} → <b>{a} mm²</b> → {size} mm²',
+    step_amp:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A ÷ {d} (συντελεστές διόρθωσης) = <b>{req} A</b> απαιτούμενη τιμή πίνακα· τρόπος εγκατάστασης {m} → ελάχιστη διατομή <b>{amp} mm²</b> (τιμή πίνακα {itAmp} A)',
+    step_final:'Επιλέγεται η μεγαλύτερη από τις τρεις διατομές → <b>{ch} mm²</b>'
+  }
+};
+
+let lang = 'el';   // default language (overridden by a saved preference)
+const $ = id => document.getElementById(id);
+function t(k){
+  const d = I18N[lang] || I18N.en;
+  return d[k] !== undefined ? d[k] : (I18N.en[k] !== undefined ? I18N.en[k] : k);
+}
+function fill(s, vars){
+  return s.replace(/\{(\w+)\}/g, (m,p) => vars[p] !== undefined ? vars[p] : m);
+}
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  if($('method').value==='D') $('ambLbl').textContent = t('lbl_ground');
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
+  try{ localStorage.setItem('cablecalc-lang', lang); }catch(e){}
+  calc();
+}
+
+BREAKERS.forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; $('breaker').appendChild(o); });
+
+let wasBuried = false;
+$('method').addEventListener('change', ()=>{
+  const buried = $('method').value==='D';
+  if(buried!==wasBuried){
+    const a=$('ambient');
+    if(buried && +a.value===30) a.value=20;
+    else if(!buried && +a.value===20) a.value=30;
+    wasBuried = buried;
+  }
+  $('ambLbl').textContent = t(buried ? 'lbl_ground' : 'lbl_ambient');
+});
+
+let loadSrc = 'A';   // which load field the user typed last: 'A' (current) or 'kW' (power)
+$('current').addEventListener('input', ()=>{ loadSrc='A'; });
+$('power').addEventListener('input', ()=>{ loadSrc='kW'; });
+
+document.querySelectorAll('#lang button').forEach(b=>{
+  b.onclick = ()=>{ lang = b.dataset.l; applyLang(); };
+});
+
+// Air ambient factors, reference 30 °C (BS 7671 Table 4B1). Below 25 °C the 25 °C factor is
+// kept (conservative; IEC B.52.14 would allow more). Above the last row there is no rating.
+const AIR_TBL = {
+  70:[[25,1.03],[30,1.0],[35,0.94],[40,0.87],[45,0.79],[50,0.71],[55,0.61],[60,0.50]],
+  90:[[25,1.02],[30,1.0],[35,0.96],[40,0.91],[45,0.87],[50,0.82],[55,0.76],[60,0.71],
+      [65,0.65],[70,0.58],[75,0.50],[80,0.41]]
+};
+function airFactor(t, tmax){
+  const tb=AIR_TBL[tmax];
+  if(t<=tb[0][0]) return tb[0][1];
+  for(let i=0;i<tb.length-1;i++){
+    const [t1,f1]=tb[i],[t2,f2]=tb[i+1];
+    if(t>=t1&&t<=t2) return f1+(f2-f1)*(t-t1)/(t2-t1);
+  }
+  return null;
+}
+// Ground factors for buried cables, reference 20 °C (IEC 60364-5-52 B.52.15 / BS 7671 4B2):
+// √((θmax − θg) ÷ (θmax − 20)), which reproduces the tabulated values; lowest row 10 °C.
+function groundFactor(t, tmax){
+  if(t>=tmax) return null;
+  return Math.sqrt((tmax-Math.max(t,10))/(tmax-20));
+}
+
+// Smallest standard size >= a, or null if it exceeds the largest standard size
+function nextSize(a, min=0){
+  for(const s of SIZES) if(s>=min && s>=a-1e-9) return s;
+  return null;
+}
+
+// Round to d decimals WITHOUT eating significant trailing zeros (100 -> "100", not "1")
+function fmt(n,d=2){
+  let s=(+n).toFixed(d);
+  if(s.indexOf('.')>=0) s=s.replace(/0+$/,'').replace(/\.$/,'');
+  return s;
+}
+
+function calc(){
+  const V=+$('voltage').value, L=+$('length').value;
+  // Whichever of current / power the user last typed is the source; the other is derived
+  // (A = kW × 1000 ÷ (V × cos φ); cos φ = 1 for DC / resistive loads).
+  const pf = Math.min(1, +$('pf').value || 1);
+  if(V>0){
+    if(loadSrc==='kW'){ const p=+$('power').value; $('current').value = p>0 ? +(p*1000/(V*pf)).toFixed(3) : ''; }
+    else { const c=+$('current').value; $('power').value = c>0 ? +(c*V*pf/1000).toFixed(3) : ''; }
+  }
+  saveInputs();
+  $('current').classList.toggle('auto', loadSrc==='kW');
+  $('power').classList.toggle('auto', loadSrc!=='kW');
+  const I = +$('current').value;
+  const dropPct=+$('drop').value;
+  const mat=$('material').value;                       // 'cu' | 'al'
+  const method=$('method').value;                      // A|B|C|E|D
+  const amb=+$('ambient').value, grp=+$('grouping').value;
+  const condTemp=+$('condtemp').value;
+  const isAl = mat==='al';
+
+  if(!(V>0&&I>0&&isFinite(I)&&L>0&&dropPct>0)){ reset(); return; }
+
+  // IEC Annex G design resistivity, scaled up for 90 °C conductors
+  const rho = RHO70[mat]*(1+ALPHA[mat]*(condTemp-70));
+
+  const VdAllow = V*dropPct/100;                       // allowed drop in volts
+  const k = 2;                                         // out-and-back conductor path
+  const aDrop = (k*rho*L*I)/VdAllow;                   // mm² for voltage drop
+
+  const buried = method==='D';
+  const tf = buried ? groundFactor(amb, condTemp) : airFactor(amb, condTemp);
+  if(tf===null){ fail(fill(t('verdict_temp'),{t:amb})); return; }
+  const derate = tf*grp;
+  const matFactor = isAl ? AL_FACTOR : 1.0;
+  const minSize = isAl ? AL_MIN : 0;
+  const reqBase = I/derate/matFactor;                  // required tabulated rating
+
+  const table = AMP[condTemp][method];
+  let aAmpIdx = -1;
+  for(let i=0;i<SIZES.length;i++){ if(SIZES[i]>=minSize && table[i]>=reqBase){ aAmpIdx=i; break; } }
+
+  // Breaker: Ib ≤ In ≤ Iz, so the cable must also carry the breaker rating In
+  const brkSel = $('breaker').value;
+  const In = brkSel==='auto' ? BREAKERS.find(b=>b>=I-1e-9) : +brkSel;
+  if(In===undefined){ fail(fill(t('verdict_cap'),{m:MAX_SIZE})); return; }
+  if(In<I-1e-9){ fail(fill(t('verdict_brk'),{b:In,i:fmt(I,1)})); return; }
+  const reqIn = In/derate/matFactor;
+  let aBrkIdx = -1;
+  for(let i=0;i<SIZES.length;i++){ if(SIZES[i]>=minSize && table[i]>=reqIn){ aBrkIdx=i; break; } }
+
+  const dropSize = nextSize(aDrop, minSize);
+  const aAmp = aAmpIdx>=0 ? SIZES[aAmpIdx] : null;
+  const aBrk = aBrkIdx>=0 ? SIZES[aBrkIdx] : null;
+  const chosen = (aAmp!==null && aBrk!==null && dropSize!==null) ? Math.max(dropSize, aAmp, aBrk) : null;
+  const chosenIdx = chosen===null ? -1 : SIZES.indexOf(chosen);
+  if(chosen===null){ fail(fill(t('verdict_cap'),{m:MAX_SIZE})); return; }
+
+  const it = table[chosenIdx];
+  const itAmp = table[aAmpIdx];
+
+  const R = rho*L/chosen;                              // ohms per conductor
+  const Vd = k*I*R;
+  const VdPct = Vd/V*100;
+  const capacity = it*derate*matFactor;                // Iz
+  const util = I/capacity*100;
+  const loss = 2*I*I*R;                  // watts
+
+  $('verdict').innerHTML = '';
+  crit({drop:dropSize===chosen, amp:aAmp===chosen, brk:aBrk===chosen});
+  $('actualDrop').textContent = fmt(Vd,2)+' V ('+fmt(VdPct,2)+'%)';
+  $('loadV').textContent = fmt(V-Vd,1)+' V';
+  $('vdropSize').textContent = fmt(dropSize,2)+' mm²';
+  $('ampSize').textContent = fmt(aAmp,2)+' mm²';
+  $('ampIb').textContent = 'I = '+fmt(I,1)+' A';
+  $('brkSize').textContent = fmt(aBrk,2)+' mm²';
+  $('brkIn').textContent = 'In = '+In+' A';
+  $('capacity').textContent = fmt(capacity,1)+' A';
+  $('util').textContent = fmt(util,0)+'%';
+  $('loss').textContent = fmt(loss,0)+' W';
+  $('res').textContent = fmt(R*1000,2)+' mΩ';
+
+  const bar = $('bar');
+  bar.style.width = Math.min(100, util)+'%';
+
+  const eq = 'A = (2 × ρ × L × I) ÷ V<sub>drop</sub>';
+  $('steps').innerHTML =
+    '<li>'+fill(t('step_allowed'),{vd:fmt(VdAllow,2),pct:dropPct,v:V})+'</li>'+
+    '<li>'+fill(t('step_rho'),{t:condTemp,rho:fmt(rho,4)})+'</li>'+
+    '<li>'+fill(t('step_area'),{eq:eq,a:fmt(aDrop,2),size:fmt(dropSize,2)})+'</li>'+
+    '<li>'+fill(t('step_amp'),{i:fmt(I,1),d:fmt(derate,2),req:fmt(reqBase,1),
+        m:method,amp:fmt(aAmp,2),itAmp:fmt(itAmp,1)})+'</li>'+
+    '<li>'+fill(t('step_brk'),{i:fmt(I,1),b:In,d:fmt(derate,2),req:fmt(reqIn,1),
+        sz:fmt(aBrk,2),it:fmt(table[aBrkIdx],1)})+'</li>'+
+    '<li>'+fill(t('step_final'),{ch:fmt(chosen,2)})+'</li>';
+}
+
+function fail(msg){
+  $('verdict').innerHTML='<span class="badge b-bad">'+msg+'</span>';
+  ['actualDrop','loadV','vdropSize','ampSize','ampIb','brkSize','brkIn','capacity','util','loss','res']
+    .forEach(id=>$(id).textContent='—');
+  crit(null);
+  $('bar').style.width='0%';
+}
+
+function crit(w){
+  w = w || {};
+  $('limDrop').classList.toggle('crit', !!w.drop);
+  $('limAmp').classList.toggle('crit', !!w.amp);
+  $('limBrk').classList.toggle('crit', !!w.brk);
+}
+
+function reset(){
+  ['actualDrop','loadV','vdropSize','ampSize','ampIb','brkSize','brkIn','capacity','util','loss','res']
+    .forEach(id=>$(id).textContent='—');
+  crit(null);
+  $('verdict').textContent = '';
+  $('bar').style.width='0%';
+}
+
+document.querySelectorAll('input,select').forEach(el=>{
+  el.addEventListener('input', calc);
+  el.addEventListener('change', calc);
+});
+
+// ---- Inputs: remembered per browser and mirrored into the URL so a result can be shared
+const KEYS = {V:'voltage', I:'current', P:'power', L:'length', dU:'drop', m:'method', mat:'material',
+              ins:'condtemp', T:'ambient', g:'grouping', pf:'pf', br:'breaker'};
+function saveInputs(){
+  const q = new URLSearchParams();
+  for(const [k,id] of Object.entries(KEYS)) q.set(k, $(id).value);
+  q.set('src', loadSrc);
+  const qs = q.toString();
+  try{ localStorage.setItem('cablecalc-inputs', qs); }catch(e){}
+  try{ history.replaceState(null, '', '?'+qs); }catch(e){}
+}
+function loadInputs(){
+  let qs = '';
+  try{ qs = location.search.slice(1); }catch(e){}
+  const known = q => Object.keys(KEYS).some(k=>q.has(k));
+  let q = new URLSearchParams(qs);
+  if(!known(q)){ try{ q = new URLSearchParams(localStorage.getItem('cablecalc-inputs')||''); }catch(e){} }
+  if(!known(q)) return;
+  for(const [k,id] of Object.entries(KEYS)){
+    if(!q.has(k)) continue;
+    const el=$(id), v=q.get(k);
+    if(el.tagName==='SELECT'){ if([...el.options].some(o=>o.value===v)) el.value=v; }
+    else if(v!=='' && isFinite(+v)) el.value=v;
+  }
+  if(q.get('src')==='kW' || q.get('src')==='A') loadSrc=q.get('src');
+  wasBuried = $('method').value==='D';
+}
+try{ loadInputs(); }catch(e){}
+
+// Initialise language (persisted) then render
+try{ const saved = localStorage.getItem('cablecalc-lang'); if(saved && I18N[saved]) lang = saved; }catch(e){}
+applyLang();
+</script>
+</body>
+</html>
