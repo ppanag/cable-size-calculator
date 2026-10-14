@@ -518,8 +518,12 @@ $('acdc').addEventListener('change', ()=>{
   }
 });
 let loadSrc = 'A';   // which load field the user typed last: 'A' (current) or 'kW' (power)
-$('current').addEventListener('input', ()=>{ loadSrc='A'; });
-$('power').addEventListener('input', ()=>{ loadSrc='kW'; });
+// Typing in a field makes it the source. Clearing a field hands the role to the other one (if it has a
+// value), so the result stays; the emptied field is refilled from it when the user leaves the field.
+$('current').addEventListener('input', ()=>{ if($('current').value!=='') loadSrc='A'; else if($('power').value!=='') loadSrc='kW'; });
+$('power').addEventListener('input', ()=>{ if($('power').value!=='') loadSrc='kW'; else if($('current').value!=='') loadSrc='A'; });
+$('current').addEventListener('blur', ()=>calc());
+$('power').addEventListener('blur', ()=>calc());
 
 document.querySelectorAll('#lang button').forEach(b=>{
   b.onclick = ()=>{ lang = b.dataset.l; applyLang(); };
@@ -567,14 +571,22 @@ function calc(){
   // Whichever of current / power the user last typed is the source; the other is derived
   // (A = kW × 1000 ÷ (k × V × cos φ), k = 1 or √3 for three-phase; cos φ = 1 for DC).
   const pf = isAC ? Math.min(1, +$('pf').value || 1) : 1;
+  // A field the user has just emptied and is still editing is not refilled under their cursor.
+  const editingEmpty = el => el.value==='' && document.activeElement===el;
+  let I = +$('current').value;
   if(V>0){
-    if(loadSrc==='kW'){ const p=+$('power').value; $('current').value = p>0 ? +(p*1000/(phaseK*V*pf)).toFixed(3) : ''; }
-    else { const c=+$('current').value; $('power').value = c>0 ? +(c*phaseK*V*pf/1000).toFixed(3) : ''; }
+    if(loadSrc==='kW'){
+      const p=+$('power').value;
+      I = p>0 ? +(p*1000/(phaseK*V*pf)).toFixed(3) : 0;
+      if(!editingEmpty($('current'))) $('current').value = I>0 ? I : '';
+    } else {
+      const c=+$('current').value;
+      if(!editingEmpty($('power'))) $('power').value = c>0 ? +(c*phaseK*V*pf/1000).toFixed(3) : '';
+    }
   }
   saveInputs();
   $('current').classList.toggle('auto', loadSrc==='kW');
   $('power').classList.toggle('auto', loadSrc!=='kW');
-  const I = +$('current').value;
   const dropPct=+$('drop').value;
   const isBar = $('ctype').value==='bar';
   const isEnc = isBar && $('barinst').value==='enc';
