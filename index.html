@@ -81,6 +81,8 @@
   details.more summary::before{content:"▸ ";display:inline-block;width:1em}
   details.more[open] summary::before{content:"▾ "}
   details.more summary:hover{color:var(--fg)}
+  body.bar .cableonly{display:none}
+  body.bar .lim .v{font-size:1.1rem;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -129,6 +131,14 @@
       </div>
 
       <div class="field">
+        <label data-i18n="lbl_ctype">Type</label>
+        <select id="ctype">
+          <option value="cable" selected data-i18n="opt_cable">Insulated cable</option>
+          <option value="bar" data-i18n="opt_bar">Copper busbar / bare conductor — 70 °C</option>
+        </select>
+      </div>
+
+      <div class="field cableonly">
           <label data-i18n="lbl_method">Installation method</label>
         <select id="method">
           <option value="A" data-i18n="opt_A">A — in conduit in a thermally insulated wall</option>
@@ -141,7 +151,7 @@
 
       <details class="more">
         <summary data-i18n="more">Other options</summary>
-      <div class="row">
+      <div class="row cableonly">
         <div class="field">
           <label data-i18n="lbl_conductor">Conductor</label>
           <select id="material">
@@ -152,7 +162,7 @@
       </div>
 
       <div class="row">
-        <div class="field">
+        <div class="field cableonly">
           <label data-i18n="lbl_condtemp">Insulation (max. conductor temp)</label>
           <select id="condtemp">
             <option value="70" selected data-i18n="opt_pvc">PVC — 70 °C</option>
@@ -178,7 +188,7 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field cableonly">
         <label data-i18n="lbl_grouping">Circuits bunched together</label>
         <select id="grouping">
           <option value="1.0">1</option>
@@ -224,7 +234,8 @@
       <div class="kv"><span data-i18n="kv_loss">Power loss in cable (approx.)</span><span id="loss">—</span></div>
       <div class="kv"><span data-i18n="kv_res">Conductor resistance</span><span id="res">—</span></div>
 
-      <div class="note" data-i18n-html="note">Current-carrying capacity from BS 7671 Appendix 4.</div>
+      <div class="note" id="noteCable" data-i18n-html="note">Current-carrying capacity from BS 7671 Appendix 4.</div>
+      <div class="note" id="noteBar" data-i18n-html="noteBar" style="display:none"></div>
     </div>
   </div>
 
@@ -265,8 +276,23 @@ const AMP = {
 // Aluminium: approximated as 0.78 × copper (no Al table built in), and only from 16 mm²,
 // the smallest aluminium size BS 7671 tabulates.
 const AL_FACTOR = 0.78, AL_MIN = 16;
-// Standard breaker ratings (EN 60898 MCBs to 125 A, then common MCCB frames)
-const BREAKERS = [6,10,13,16,20,25,32,40,50,63,80,100,125,160,200,250];
+// Flat bare copper busbars (E-Cu), one bar: DIN 43671 continuous current (A) at 35 °C ambient and
+// 65 / 85 / 105 °C bar temperature, from the Siemens LV 10 busbar catalogue (p. 4). Sorted by area.
+const BARS = [
+  {w:12,t:5, i65:188,i85:248,i105:295}, {w:15,t:5, i65:222,i85:293,i105:349},
+  {w:20,t:5, i65:274,i85:362,i105:430}, {w:12,t:10,i65:302,i85:398,i105:474},
+  {w:25,t:5, i65:327,i85:432,i105:513}, {w:30,t:5, i65:379,i85:500,i105:595},
+  {w:20,t:10,i65:427,i85:564,i105:670}, {w:30,t:10,i65:573,i85:756,i105:900}
+];
+const BAR_TMAX = 70, BAR_MAX_AMB = 60;   // 70 °C bar; below 10 K rise the interpolation is not trusted
+// Rating at bar temperature BAR_TMAX and ambient amb: I = I65 × (ΔT ÷ 30 K)^n, ΔT = 70 − amb, with n
+// fitted per bar from its 65 °C and 85 °C values (ΔT = 30 K and 50 K at the catalogue's 35 °C ambient).
+function barRating(b, amb){
+  const n = Math.log(b.i85/b.i65)/Math.log(50/30);
+  return b.i65*Math.pow((BAR_TMAX-amb)/30, n);
+}
+// Standard breaker ratings (EN 60898 MCBs to 125 A, then common MCCB frames to 630 A)
+const BREAKERS = [6,10,13,16,20,25,32,40,50,63,80,100,125,160,200,250,315,400,500,630];
 
 // IEC 60364-5-52 Annex G design resistivity at 70 °C (Ω·mm²/m) and temperature coefficient
 const RHO70 = {cu:0.0225, al:0.036};
@@ -275,7 +301,12 @@ const ALPHA = {cu:0.00393, al:0.00403};
 // ---------------- i18n ----------------
 const I18N = {
   en:{
-    kv_brk:'Breaker limit', lbl_pf:'Power factor (cos φ)', lbl_breaker:'Breaker rating In (A)', opt_auto:'Auto', verdict_brk:'Breaker {b} A is below the load current {i} A', step_brk:'Breaker: In = <b>{b} A</b> (≥ {i} A); {b} A ÷ {d} = <b>{req} A</b> tabulated rating required → smallest size <b>{sz} mm²</b> (tabulated {it} A)',
+    lbl_ctype:'Type', opt_cable:'Insulated cable', opt_bar:'Copper busbar / bare conductor — 70 °C', critical_bar:'✓ Sets the busbar size',
+    verdict_cap_bar:'Exceeds the largest listed busbar (30 × 10 mm) — use several bars in parallel or reduce the load / length',
+    verdict_bartemp:'No busbar rating at {t} °C ambient — under 10 K of temperature rise is left below 70 °C',
+    step_amp_bar:'Current capacity: {i} A → smallest bar <b>{amp}</b> (rated <b>{itAmp} A</b> at 70 °C bar, {a} °C ambient)',
+    noteBar:'Flat bare copper busbars, one bar, at a maximum bar temperature of 70 °C. Base values are the DIN 43671 continuous currents (E-Cu, bare, 35 °C ambient) at 65 °C and 85 °C bar temperature from the Siemens LV 10 busbar catalogue. The rating at 70 °C and your ambient is interpolated as I = I<sub>65</sub> × (ΔT ÷ 30 K)<sup>n</sup>, where ΔT = 70 °C − ambient and n is fitted for each bar from its 65 °C and 85 °C values (it reproduces the catalogue 105 °C values to within 3%). <b>Approximate</b> — not a published 70 °C table; mounting position, bar spacing, enclosure and AC effects are not considered. Copper only; the largest listed bar is 30 × 10 mm. Voltage drop uses ρ = 0.0225 Ω·mm²/m at 70 °C. Resistance only. Verify against local regulations.',
+    kv_brk:'Breaker limit', lbl_pf:'Power factor (cos φ)', lbl_breaker:'Breaker rating In (A)', opt_auto:'Auto', verdict_brk:'Breaker {b} A is below the load current {i} A', step_brk:'Breaker: In = <b>{b} A</b> (≥ {i} A); {b} A ÷ {d} = <b>{req} A</b> tabulated rating required → smallest size <b>{sz}</b> (tabulated {it} A)',
     title:'Cable Size Calculator',
     subtitle:'Voltage-drop & current-carrying capacity sizing',
     h_inputs:'Inputs', h_result:'Result', h_how:'How it was calculated',
@@ -305,12 +336,17 @@ const I18N = {
     verdict_cap:'Exceeds {m} mm² — use parallel cables or reduce the load / length',
     step_allowed:'Allowed drop: <b>{vd} V</b> ({pct}% of {v} V)',
     step_rho:'ρ at {t} °C = <b>{rho}</b> Ω·mm²/m (IEC design value)',
-    step_area:'{eq} → <b>{a} mm²</b> → {size} mm²',
-    step_amp:'Current capacity: {i} A ÷ {d} (correction factors) = <b>{req} A</b> tabulated rating required; method {m} → smallest size <b>{amp} mm²</b> (tabulated {itAmp} A)',
-    step_final:'The largest of the three sizes governs → <b>{ch} mm²</b>'
+    step_area:'{eq} → <b>{a} mm²</b> → {size}',
+    step_amp:'Current capacity: {i} A ÷ {d} (correction factors) = <b>{req} A</b> tabulated rating required; method {m} → smallest size <b>{amp}</b> (tabulated {itAmp} A)',
+    step_final:'The largest of the three sizes governs → <b>{ch}</b>'
   },
   el:{
-    kv_brk:'Κριτήριο διάταξης προστασίας', lbl_pf:'Συντελεστής ισχύος (συνφ)', lbl_breaker:'Διάταξη προστασίας In (A)', opt_auto:'Αυτόματα', verdict_brk:'Η διάταξη προστασίας {b} A είναι μικρότερη από το ρεύμα φορτίου {i} A', step_brk:'Διάταξη προστασίας: In = <b>{b} A</b> (≥ {i} A)· {b} A ÷ {d} = <b>{req} A</b> απαιτούμενη τιμή πίνακα → ελάχιστη διατομή <b>{sz} mm²</b> (τιμή πίνακα {it} A)',
+    lbl_ctype:'Τύπος', opt_cable:'Μονωμένο καλώδιο', opt_bar:'Χάλκινος ζυγός / γυμνός αγωγός — 70 °C', critical_bar:'✓ Καθορίζει τη διατομή του ζυγού',
+    verdict_cap_bar:'Υπερβαίνει τον μεγαλύτερο ζυγό του πίνακα (30 × 10 mm) — χρησιμοποιήστε περισσότερους ζυγούς παράλληλα ή μειώστε το φορτίο / το μήκος',
+    verdict_bartemp:'Δεν προβλέπεται μέγιστο επιτρεπόμενο ρεύμα ζυγού με περιβάλλον {t} °C — απομένει θερμοκρασιακή άνοδος μικρότερη από 10 K κάτω από τους 70 °C',
+    step_amp_bar:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A → ελάχιστος ζυγός <b>{amp}</b> (επιτρεπόμενο ρεύμα <b>{itAmp} A</b> με θερμοκρασία ζυγού 70 °C, περιβάλλον {a} °C)',
+    noteBar:'Επίπεδοι γυμνοί χάλκινοι ζυγοί, ένας ζυγός ανά φάση, με μέγιστη θερμοκρασία ζυγού 70 °C. Οι βασικές τιμές είναι τα συνεχή ρεύματα κατά DIN 43671 (E-Cu, γυμνός, περιβάλλον 35 °C) για θερμοκρασία ζυγού 65 °C και 85 °C, από τον κατάλογο ζυγών Siemens LV 10. Το ρεύμα στους 70 °C και στη θερμοκρασία περιβάλλοντος που δώσατε προκύπτει με παρεμβολή: I = I<sub>65</sub> × (ΔT ÷ 30 K)<sup>n</sup>, όπου ΔT = 70 °C − περιβάλλον και το n προσδιορίζεται για κάθε ζυγό από τις τιμές 65 °C και 85 °C (αναπαράγει τις τιμές καταλόγου των 105 °C με απόκλιση έως 3%). <b>Προσεγγιστικές τιμές</b> — δεν προέρχονται από δημοσιευμένο πίνακα 70 °C· δεν λαμβάνονται υπόψη η θέση τοποθέτησης, η απόσταση των ζυγών, το περίβλημα και τα φαινόμενα εναλλασσόμενου ρεύματος. Μόνο χαλκός· ο μεγαλύτερος ζυγός του πίνακα είναι 30 × 10 mm. Η πτώση τάσης υπολογίζεται με ρ = 0,0225 Ω·mm²/m στους 70 °C. Λαμβάνεται υπόψη μόνο η ωμική αντίσταση.',
+    kv_brk:'Κριτήριο διάταξης προστασίας', lbl_pf:'Συντελεστής ισχύος (συνφ)', lbl_breaker:'Διάταξη προστασίας In (A)', opt_auto:'Αυτόματα', verdict_brk:'Η διάταξη προστασίας {b} A είναι μικρότερη από το ρεύμα φορτίου {i} A', step_brk:'Διάταξη προστασίας: In = <b>{b} A</b> (≥ {i} A)· {b} A ÷ {d} = <b>{req} A</b> απαιτούμενη τιμή πίνακα → ελάχιστη διατομή <b>{sz}</b> (τιμή πίνακα {it} A)',
     title:'Υπολογιστής Διατομής Καλωδίου',
     subtitle:'Διαστασιολόγηση με κριτήρια πτώσης τάσης και μέγιστου επιτρεπόμενου ρεύματος',
     h_inputs:'Δεδομένα', h_result:'Αποτέλεσμα', h_how:'Πώς υπολογίστηκε',
@@ -342,9 +378,9 @@ const I18N = {
     verdict_cap:'Υπερβαίνει τα {m} mm² — χρησιμοποιήστε παράλληλα καλώδια ή μειώστε το φορτίο / το μήκος',
     step_allowed:'Επιτρεπόμενη πτώση τάσης: <b>{vd} V</b> ({pct}% των {v} V)',
     step_rho:'ρ στους {t} °C = <b>{rho}</b> Ω·mm²/m (τιμή σχεδιασμού IEC)',
-    step_area:'{eq} → <b>{a} mm²</b> → {size} mm²',
-    step_amp:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A ÷ {d} (συντελεστές διόρθωσης) = <b>{req} A</b> απαιτούμενη τιμή πίνακα· τρόπος εγκατάστασης {m} → ελάχιστη διατομή <b>{amp} mm²</b> (τιμή πίνακα {itAmp} A)',
-    step_final:'Επιλέγεται η μεγαλύτερη από τις τρεις διατομές → <b>{ch} mm²</b>'
+    step_area:'{eq} → <b>{a} mm²</b> → {size}',
+    step_amp:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A ÷ {d} (συντελεστές διόρθωσης) = <b>{req} A</b> απαιτούμενη τιμή πίνακα· τρόπος εγκατάστασης {m} → ελάχιστη διατομή <b>{amp}</b> (τιμή πίνακα {itAmp} A)',
+    step_final:'Επιλέγεται η μεγαλύτερη από τις τρεις διατομές → <b>{ch}</b>'
   }
 };
 
@@ -361,7 +397,7 @@ function applyLang(){
   document.documentElement.lang = lang;
   document.title = t('title');
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
-  if($('method').value==='D') $('ambLbl').textContent = t('lbl_ground');
+  if($('ctype').value!=='bar' && $('method').value==='D') $('ambLbl').textContent = t('lbl_ground');
   document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
   document.querySelectorAll('#lang button').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
   try{ localStorage.setItem('cablecalc-lang', lang); }catch(e){}
@@ -371,8 +407,8 @@ function applyLang(){
 BREAKERS.forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; $('breaker').appendChild(o); });
 
 let wasBuried = false;
-$('method').addEventListener('change', ()=>{
-  const buried = $('method').value==='D';
+function syncAmb(){
+  const buried = $('ctype').value!=='bar' && $('method').value==='D';
   if(buried!==wasBuried){
     const a=$('ambient');
     if(buried && +a.value===30) a.value=20;
@@ -380,7 +416,9 @@ $('method').addEventListener('change', ()=>{
     wasBuried = buried;
   }
   $('ambLbl').textContent = t(buried ? 'lbl_ground' : 'lbl_ambient');
-});
+}
+$('method').addEventListener('change', syncAmb);
+$('ctype').addEventListener('change', syncAmb);
 
 let loadSrc = 'A';   // which load field the user typed last: 'A' (current) or 'kW' (power)
 $('current').addEventListener('input', ()=>{ loadSrc='A'; });
@@ -413,12 +451,6 @@ function groundFactor(t, tmax){
   return Math.sqrt((tmax-Math.max(t,10))/(tmax-20));
 }
 
-// Smallest standard size >= a, or null if it exceeds the largest standard size
-function nextSize(a, min=0){
-  for(const s of SIZES) if(s>=min && s>=a-1e-9) return s;
-  return null;
-}
-
 // Round to d decimals WITHOUT eating significant trailing zeros (100 -> "100", not "1")
 function fmt(n,d=2){
   let s=(+n).toFixed(d);
@@ -440,10 +472,11 @@ function calc(){
   $('power').classList.toggle('auto', loadSrc!=='kW');
   const I = +$('current').value;
   const dropPct=+$('drop').value;
-  const mat=$('material').value;                       // 'cu' | 'al'
-  const method=$('method').value;                      // A|B|C|E|D
-  const amb=+$('ambient').value, grp=+$('grouping').value;
-  const condTemp=+$('condtemp').value;
+  const isBar = $('ctype').value==='bar';
+  const mat = isBar ? 'cu' : $('material').value;        // 'cu' | 'al'
+  const method = isBar ? 'C' : $('method').value;        // A|B|C|E|D
+  const amb=+$('ambient').value, grp = isBar ? 1 : +$('grouping').value;
+  const condTemp = isBar ? BAR_TMAX : +$('condtemp').value;
   const isAl = mat==='al';
 
   if(!(V>0&&I>0&&isFinite(I)&&L>0&&dropPct>0)){ reset(); return; }
@@ -455,34 +488,39 @@ function calc(){
   const k = 2;                                         // out-and-back conductor path
   const aDrop = (k*rho*L*I)/VdAllow;                   // mm² for voltage drop
 
-  const buried = method==='D';
-  const tf = buried ? groundFactor(amb, condTemp) : airFactor(amb, condTemp);
-  if(tf===null){ fail(fill(t('verdict_temp'),{t:amb})); return; }
+  // SZ = candidate areas (mm²) and table = their ratings: standard cable sizes, or the listed bars
+  const buried = !isBar && method==='D';
+  let tf, SZ, table;
+  if(isBar){
+    if(amb>BAR_MAX_AMB){ fail(fill(t('verdict_bartemp'),{t:amb})); return; }
+    tf = 1; SZ = BARS.map(b=>b.w*b.t); table = BARS.map(b=>barRating(b,amb));
+  } else {
+    tf = buried ? groundFactor(amb, condTemp) : airFactor(amb, condTemp);
+    if(tf===null){ fail(fill(t('verdict_temp'),{t:amb})); return; }
+    SZ = SIZES; table = AMP[condTemp][method];
+  }
+  const lab = i => isBar ? BARS[i].w+'\u00a0×\u00a0'+BARS[i].t+'\u00a0mm' : fmt(SZ[i],2)+' mm²';
+  const capMsg = isBar ? t('verdict_cap_bar') : fill(t('verdict_cap'),{m:MAX_SIZE});
   const derate = tf*grp;
   const matFactor = isAl ? AL_FACTOR : 1.0;
   const minSize = isAl ? AL_MIN : 0;
   const reqBase = I/derate/matFactor;                  // required tabulated rating
+  const firstIdx = pred => SZ.findIndex((s,i)=>s>=minSize && pred(s,i));
 
-  const table = AMP[condTemp][method];
-  let aAmpIdx = -1;
-  for(let i=0;i<SIZES.length;i++){ if(SIZES[i]>=minSize && table[i]>=reqBase){ aAmpIdx=i; break; } }
+  const aAmpIdx = firstIdx((s,i)=>table[i]>=reqBase);
 
   // Breaker: Ib ≤ In ≤ Iz, so the cable must also carry the breaker rating In
   const brkSel = $('breaker').value;
   const In = brkSel==='auto' ? BREAKERS.find(b=>b>=I-1e-9) : +brkSel;
-  if(In===undefined){ fail(fill(t('verdict_cap'),{m:MAX_SIZE})); return; }
+  if(In===undefined){ fail(capMsg); return; }
   if(In<I-1e-9){ fail(fill(t('verdict_brk'),{b:In,i:fmt(I,1)})); return; }
   const reqIn = In/derate/matFactor;
-  let aBrkIdx = -1;
-  for(let i=0;i<SIZES.length;i++){ if(SIZES[i]>=minSize && table[i]>=reqIn){ aBrkIdx=i; break; } }
+  const aBrkIdx = firstIdx((s,i)=>table[i]>=reqIn);
+  const dropIdx = firstIdx(s=>s>=aDrop-1e-9);
+  if(aAmpIdx<0||aBrkIdx<0||dropIdx<0){ fail(capMsg); return; }
 
-  const dropSize = nextSize(aDrop, minSize);
-  const aAmp = aAmpIdx>=0 ? SIZES[aAmpIdx] : null;
-  const aBrk = aBrkIdx>=0 ? SIZES[aBrkIdx] : null;
-  const chosen = (aAmp!==null && aBrk!==null && dropSize!==null) ? Math.max(dropSize, aAmp, aBrk) : null;
-  const chosenIdx = chosen===null ? -1 : SIZES.indexOf(chosen);
-  if(chosen===null){ fail(fill(t('verdict_cap'),{m:MAX_SIZE})); return; }
-
+  const chosenIdx = Math.max(dropIdx, aAmpIdx, aBrkIdx);
+  const chosen = SZ[chosenIdx];
   const it = table[chosenIdx];
   const itAmp = table[aAmpIdx];
 
@@ -494,13 +532,17 @@ function calc(){
   const loss = 2*I*I*R;                  // watts
 
   $('verdict').innerHTML = '';
-  crit({drop:dropSize===chosen, amp:aAmp===chosen, brk:aBrk===chosen});
+  crit({drop:dropIdx===chosenIdx, amp:aAmpIdx===chosenIdx, brk:aBrkIdx===chosenIdx});
+  document.body.classList.toggle('bar', isBar);
+  $('noteCable').style.display = isBar ? 'none' : '';
+  $('noteBar').style.display = isBar ? '' : 'none';
+  document.querySelectorAll('.lim .tag').forEach(e=>{ e.textContent = t(isBar ? 'critical_bar' : 'critical'); });
   $('actualDrop').textContent = fmt(Vd,2)+' V ('+fmt(VdPct,2)+'%)';
   $('loadV').textContent = fmt(V-Vd,1)+' V';
-  $('vdropSize').textContent = fmt(dropSize,2)+' mm²';
-  $('ampSize').textContent = fmt(aAmp,2)+' mm²';
+  $('vdropSize').textContent = lab(dropIdx);
+  $('ampSize').textContent = lab(aAmpIdx);
   $('ampIb').textContent = 'I = '+fmt(I,1)+' A';
-  $('brkSize').textContent = fmt(aBrk,2)+' mm²';
+  $('brkSize').textContent = lab(aBrkIdx);
   $('brkIn').textContent = 'In = '+In+' A';
   $('capacity').textContent = fmt(capacity,1)+' A';
   $('util').textContent = fmt(util,0)+'%';
@@ -514,12 +556,13 @@ function calc(){
   $('steps').innerHTML =
     '<li>'+fill(t('step_allowed'),{vd:fmt(VdAllow,2),pct:dropPct,v:V})+'</li>'+
     '<li>'+fill(t('step_rho'),{t:condTemp,rho:fmt(rho,4)})+'</li>'+
-    '<li>'+fill(t('step_area'),{eq:eq,a:fmt(aDrop,2),size:fmt(dropSize,2)})+'</li>'+
-    '<li>'+fill(t('step_amp'),{i:fmt(I,1),d:fmt(derate,2),req:fmt(reqBase,1),
-        m:method,amp:fmt(aAmp,2),itAmp:fmt(itAmp,1)})+'</li>'+
+    '<li>'+fill(t('step_area'),{eq:eq,a:fmt(aDrop,2),size:lab(dropIdx)})+'</li>'+
+    '<li>'+(isBar ? fill(t('step_amp_bar'),{i:fmt(I,1),a:amb,amp:lab(aAmpIdx),itAmp:fmt(itAmp,0)})
+                : fill(t('step_amp'),{i:fmt(I,1),d:fmt(derate,2),req:fmt(reqBase,1),
+        m:method,amp:lab(aAmpIdx),itAmp:fmt(itAmp,1)}))+'</li>'+
     '<li>'+fill(t('step_brk'),{i:fmt(I,1),b:In,d:fmt(derate,2),req:fmt(reqIn,1),
-        sz:fmt(aBrk,2),it:fmt(table[aBrkIdx],1)})+'</li>'+
-    '<li>'+fill(t('step_final'),{ch:fmt(chosen,2)})+'</li>';
+        sz:lab(aBrkIdx),it:fmt(table[aBrkIdx],1)})+'</li>'+
+    '<li>'+fill(t('step_final'),{ch:lab(chosenIdx)})+'</li>';
 }
 
 function fail(msg){
@@ -551,7 +594,7 @@ document.querySelectorAll('input,select').forEach(el=>{
 });
 
 // ---- Inputs: remembered per browser and mirrored into the URL so a result can be shared
-const KEYS = {V:'voltage', I:'current', P:'power', L:'length', dU:'drop', m:'method', mat:'material',
+const KEYS = {ct:'ctype', V:'voltage', I:'current', P:'power', L:'length', dU:'drop', m:'method', mat:'material',
               ins:'condtemp', T:'ambient', g:'grouping', pf:'pf', br:'breaker'};
 function saveInputs(){
   const q = new URLSearchParams();
@@ -575,7 +618,7 @@ function loadInputs(){
     else if(v!=='' && isFinite(+v)) el.value=v;
   }
   if(q.get('src')==='kW' || q.get('src')==='A') loadSrc=q.get('src');
-  wasBuried = $('method').value==='D';
+  wasBuried = $('ctype').value!=='bar' && $('method').value==='D';
 }
 try{ loadInputs(); }catch(e){}
 
