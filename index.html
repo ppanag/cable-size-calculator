@@ -60,12 +60,13 @@
   footer a{color:var(--accent);text-decoration:none}
   footer a:hover{text-decoration:underline}
   .note{font-size:.78rem;color:var(--muted);margin-top:16px;line-height:1.5}
+  .kvnote{font-size:.74rem;color:var(--muted);line-height:1.45;margin:2px 0 8px}
   .steps{font-size:.85rem;line-height:1.7;color:#c3ccd6;margin:0;padding-left:18px}
   .steps b{color:var(--fg)}
   .or{display:flex;align-items:center;gap:10px;font-size:.74rem;color:var(--muted);margin:-2px 0 10px}
   .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
   .field input.auto{border-style:dashed;color:var(--muted);background:transparent}
-  .limits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+  .limits{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:0 0 16px}
   @media(max-width:420px){.limits{grid-template-columns:1fr}}
   .lim .sub{font-size:.75rem;color:var(--muted);margin-top:1px}
   .lim{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card2);opacity:.6}
@@ -207,12 +208,6 @@
           <label data-i18n="lbl_pf">Power factor (cos φ)</label>
           <input id="pf" type="number" value="1" min="0.1" max="1" step="0.01">
         </div>
-        <div class="field">
-          <label data-i18n="lbl_breaker">Breaker rating In (A)</label>
-          <select id="breaker">
-            <option value="auto" data-i18n="opt_auto">Auto</option>
-          </select>
-        </div>
       </div>
 
       <div class="field cableonly">
@@ -245,17 +240,13 @@
           <div class="sub" id="ampIb"></div>
           <div class="tag" data-i18n="critical">✓ Sets the cable size</div>
         </div>
-        <div class="lim" id="limBrk">
-          <div class="t" data-i18n="kv_brk">Breaker limit</div>
-          <div class="v"><span id="brkSize">—</span></div>
-          <div class="sub" id="brkIn"></div>
-          <div class="tag" data-i18n="critical">✓ Sets the cable size</div>
-        </div>
       </div>
 
       <div class="kv"><span data-i18n="kv_drop">Voltage drop at selected size</span><span id="actualDrop">—</span></div>
       <div class="kv"><span data-i18n="kv_loadV">Voltage at load</span><span id="loadV">—</span></div>
       <div class="kv"><span data-i18n="kv_iz">Current-carrying capacity (Iz)</span><span id="capacity">—</span></div>
+      <div class="kv"><span data-i18n="kv_in">Protective device rating (In)</span><span id="inVal">—</span></div>
+      <div class="kvnote" id="inNote"></div>
       <div class="kv"><span data-i18n="kv_util">Utilisation (I ÷ Iz)</span><span id="util">—</span></div>
       <div class="bar"><i id="bar" style="width:0%;background:var(--ok)"></i></div>
       <div class="kv"><span data-i18n="kv_loss">Power loss in cable (approx.)</span><span id="loss">—</span></div>
@@ -362,7 +353,8 @@ function barAC(b, k){
   const X = k*2*Math.PI*50*2e-7*Math.log(BAR_SPACING/(0.2235*(b.w+b.t)))*1000;   // mV/A/m; k = 2 (two bars) or √3 (three)
   return {ks, x:X};
 }
-// Standard breaker ratings (EN 60898 MCBs to 125 A, then common MCCB / ACB frames)
+// Standard protective device ratings In (EN 60898 MCBs to 125 A, then common MCCB / ACB frames);
+// the smallest one ≥ the load current is assumed
 const BREAKERS = [6,10,13,16,20,25,32,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250];
 
 // IEC 60364-5-52 Annex G design resistivity (1.25 × ρ20), used for 70 °C conductors and busbars; scaled
@@ -383,7 +375,11 @@ const I18N = {
     verdict_bartemp:'No busbar rating at {t} °C ambient — less than 10 K of temperature rise remains up to 70 °C',
     step_amp_bar:'Current capacity: {i} A → smallest bar <b>{amp}</b> (rated <b>{itAmp} A</b> at 70 °C bar, {a} °C ambient{enc})',
     noteBar:'Flat bare copper busbars, one bar per conductor, at a maximum bar temperature of 70 °C. Base values are the DIN 43671 continuous currents (E-Cu, bare, 35 °C ambient) at 65 °C and 85 °C bar temperature from the Siemens LV 10 busbar catalogue. The rating at 70 °C and your ambient is interpolated as I = I<sub>65</sub> × (ΔT ÷ 30 K)<sup>n</sup>, where ΔT = 70 °C − ambient and n is fitted for each bar from its 65 °C and 85 °C values (it reproduces the catalogue 105 °C values to within about 1%). <b>Approximate</b> — not a published 70 °C table; mounting position and bar spacing are not considered. Copper only; the largest listed bar is 30 × 10 mm. Voltage drop uses the IEC 60364-5-52 Annex G design resistivity, ρ = 0.0225 Ω·mm²/m. <b>AC (50 Hz):</b> the resistance is multiplied by the skin-effect factor of a flat bar of that thickness (δ = 10.7 mm), the rating is divided by its square root, and the reactance of two parallel bars at 60 mm centres is added, x = 0.126 · ln[d ÷ (0.2235 (w + t))] mΩ/m (three-phase, three bars: 0.109 instead of 0.126); voltage drop = I × L × (r cos φ + x sin φ). Proximity effect and harmonics are not considered. <b>DC:</b> resistance only. <b>In trunking / enclosure:</b> the free-air rating is multiplied by the enclosure derating factor you enter; the default 0.80 is an assumption, not a standard value — for manufactured busbar trunking use the manufacturer’s system rating. <b>Frequency:</b> the AC calculation is for 50 Hz. At 60 Hz the reactance is about 20% higher and the skin effect slightly higher; the effect on the result is small for resistance-dominated circuits, but it can matter for large sizes at low power factor. Verify against local regulations.',
-    kv_brk:'Breaker limit', lbl_pf:'Power factor (cos φ)', lbl_breaker:'Breaker rating In (A)', opt_auto:'Auto', verdict_brk:'Breaker {b} A is below the load current {i} A', step_brk:'Breaker: In = <b>{b} A</b> (≥ {i} A); {b} A ÷ {d} = <b>{req} A</b> tabulated rating required → smallest size <b>{sz}</b> (tabulated {it} A)',
+    lbl_pf:'Power factor (cos φ)', kv_in:'Protective device rating (In)',
+    in_note:'Smallest standard rating ≥ I. The conductor must carry In (Ib ≤ In ≤ Iz), so the current-capacity limit is sized for In.',
+    in_raise:'On the load current alone, {sz} would be enough.',
+    verdict_inmax:'Load current above {m} A, the largest standard protective device rating here — split the load or use parallel circuits',
+    step_brk:'Protective device: In = <b>{b} A</b> (smallest standard rating ≥ {i} A); {b} A ÷ {d} = <b>{req} A</b> tabulated rating required → smallest size <b>{sz}</b> (tabulated {it} A)',
     title:'Cable Size Calculator',
     subtitle:'Voltage-drop & current-carrying capacity sizing',
     h_inputs:'Inputs', h_result:'Result', h_how:'How it was calculated',
@@ -418,7 +414,7 @@ const I18N = {
     lbl_distance_bar:'Busbar length (m)',
     step_area:'{eq} → <b>{a} mm²</b> → {size}',
     step_amp:'Current capacity: {i} A ÷ {d} (correction factors) = <b>{req} A</b> tabulated rating required; method {m} → smallest size <b>{amp}</b> (tabulated {itAmp} A)',
-    step_final:'The largest of the three sizes governs → <b>{ch}</b>'
+    step_final:'The larger of the two sizes governs → <b>{ch}</b>'
   },
   el:{
     lbl_barinst:'Εγκατάσταση', opt_barair:'Ελεύθερα στον αέρα', opt_barenc:'Σε κανάλι / περίβλημα', lbl_barfac:'Συντελεστής μείωσης λόγω περιβλήματος',
@@ -431,7 +427,11 @@ const I18N = {
     verdict_bartemp:'Δεν δίνεται επιτρεπόμενο ρεύμα ζυγού για θερμοκρασία περιβάλλοντος {t} °C — η ανύψωση θερμοκρασίας που απομένει έως τους 70 °C είναι μικρότερη από 10 K',
     step_amp_bar:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A → ελάχιστος ζυγός <b>{amp}</b> (επιτρεπόμενο ρεύμα <b>{itAmp} A</b> με θερμοκρασία ζυγού 70 °C, περιβάλλον {a} °C{enc})',
     noteBar:'Επίπεδοι γυμνοί χάλκινοι ζυγοί, ένας ζυγός ανά αγωγό, με μέγιστη θερμοκρασία ζυγού 70 °C. Οι βασικές τιμές είναι τα συνεχή ρεύματα κατά DIN 43671 (E-Cu, γυμνός, περιβάλλον 35 °C) για θερμοκρασία ζυγού 65 °C και 85 °C, από τον κατάλογο ζυγών Siemens LV 10. Το ρεύμα στους 70 °C και στη θερμοκρασία περιβάλλοντος που δώσατε προκύπτει με παρεμβολή: I = I<sub>65</sub> × (ΔT ÷ 30 K)<sup>n</sup>, όπου ΔT = 70 °C − περιβάλλον και το n προσδιορίζεται για κάθε ζυγό από τις τιμές 65 °C και 85 °C (αναπαράγει τις τιμές καταλόγου των 105 °C με απόκλιση περίπου 1%). <b>Προσεγγιστικές τιμές</b> — δεν προέρχονται από δημοσιευμένο πίνακα 70 °C· δεν λαμβάνονται υπόψη η θέση τοποθέτησης και η απόσταση των ζυγών. Μόνο χαλκός· ο μεγαλύτερος ζυγός του πίνακα είναι 30 × 10 mm. Η πτώση τάσης υπολογίζεται με την ειδική αντίσταση σχεδιασμού του IEC 60364-5-52, Παράρτημα G, ρ = 0,0225 Ω·mm²/m. <b>AC (50 Hz):</b> η αντίσταση πολλαπλασιάζεται με τον συντελεστή επιδερμικού φαινομένου επίπεδου ζυγού του συγκεκριμένου πάχους (δ = 10,7 mm), το επιτρεπόμενο ρεύμα διαιρείται με την τετραγωνική του ρίζα και προστίθεται η επαγωγική αντίσταση δύο παράλληλων ζυγών με απόσταση αξόνων 60 mm, x = 0,126 · ln[d ÷ (0,2235 (w + t))] mΩ/m (τριφασικό, τρεις ζυγοί: 0,109 αντί για 0,126)· πτώση τάσης = I × L × (r συνφ + x ημφ). Δεν λαμβάνονται υπόψη το φαινόμενο γειτνίασης και οι αρμονικές. <b>DC:</b> μόνο η ωμική αντίσταση. <b>Μέσα σε κανάλι / περίβλημα:</b> το ρεύμα ελεύθερου αέρα πολλαπλασιάζεται με τον συντελεστή μείωσης που εισάγετε· η προεπιλογή 0,80 είναι παραδοχή και όχι τιμή προτύπου — για έτοιμα συστήματα ζυγών (busbar trunking) χρησιμοποιήστε την τιμή του κατασκευαστή. <b>Συχνότητα:</b> ο υπολογισμός AC αφορά 50 Hz. Στα 60 Hz η επαγωγική αντίσταση είναι περίπου 20% μεγαλύτερη και το επιδερμικό φαινόμενο ελαφρώς μεγαλύτερο· η επίδραση στο αποτέλεσμα είναι μικρή για κυκλώματα με κυρίαρχη την ωμική αντίσταση, αλλά μπορεί να έχει σημασία για μεγάλες διατομές με χαμηλό συντελεστή ισχύος.',
-    kv_brk:'Κριτήριο διάταξης προστασίας', lbl_pf:'Συντελεστής ισχύος (συνφ)', lbl_breaker:'Ονομαστικό ρεύμα διάταξης προστασίας In (A)', opt_auto:'Αυτόματα', verdict_brk:'Το ονομαστικό ρεύμα της διάταξης προστασίας ({b} A) είναι μικρότερο από το ρεύμα φορτίου ({i} A)', step_brk:'Διάταξη προστασίας: In = <b>{b} A</b> (≥ {i} A)· {b} A ÷ {d} = <b>{req} A</b> απαιτούμενη τιμή πίνακα → ελάχιστη διατομή <b>{sz}</b> (τιμή πίνακα {it} A)',
+    lbl_pf:'Συντελεστής ισχύος (συνφ)', kv_in:'Ονομαστικό ρεύμα διάταξης προστασίας (In)',
+    in_note:'Η μικρότερη τυποποιημένη τιμή ≥ I. Ο αγωγός πρέπει να φέρει το In (Ib ≤ In ≤ Iz), γι’ αυτό το κριτήριο επιτρεπόμενου ρεύματος διαστασιολογείται με το In.',
+    in_raise:'Μόνο με το ρεύμα φορτίου θα αρκούσαν {sz}.',
+    verdict_inmax:'Ρεύμα φορτίου μεγαλύτερο από {m} A, τη μεγαλύτερη τυποποιημένη τιμή διάταξης προστασίας εδώ — μοιράστε το φορτίο ή χρησιμοποιήστε παράλληλα κυκλώματα',
+    step_brk:'Διάταξη προστασίας: In = <b>{b} A</b> (μικρότερη τυποποιημένη τιμή ≥ {i} A)· {b} A ÷ {d} = <b>{req} A</b> απαιτούμενη τιμή πίνακα → ελάχιστη διατομή <b>{sz}</b> (τιμή πίνακα {it} A)',
     title:'Υπολογιστής Διατομής Καλωδίου',
     subtitle:'Διαστασιολόγηση με κριτήρια πτώσης τάσης και μέγιστου επιτρεπόμενου ρεύματος',
     h_inputs:'Δεδομένα', h_result:'Αποτέλεσμα', h_how:'Πώς υπολογίστηκε',
@@ -468,7 +468,7 @@ const I18N = {
     lbl_distance_bar:'Μήκος ζυγού (m)',
     step_area:'{eq} → <b>{a} mm²</b> → {size}',
     step_amp:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A ÷ {d} (συντελεστές διόρθωσης) = <b>{req} A</b> απαιτούμενη τιμή πίνακα· τρόπος εγκατάστασης {m} → ελάχιστη διατομή <b>{amp}</b> (τιμή πίνακα {itAmp} A)',
-    step_final:'Επιλέγεται η μεγαλύτερη από τις τρεις διατομές → <b>{ch}</b>'
+    step_final:'Επιλέγεται η μεγαλύτερη από τις δύο διατομές → <b>{ch}</b>'
   }
 };
 
@@ -492,7 +492,6 @@ function applyLang(){
   calc();
 }
 
-BREAKERS.forEach(b=>{ const o=document.createElement('option'); o.value=b; o.textContent=b; $('breaker').appendChild(o); });
 
 let wasBuried = false;
 function syncAmb(){
@@ -643,17 +642,16 @@ function calc(){
 
   const aAmpIdx = firstIdx((s,i)=>table[i]>=reqBase);
 
-  // Breaker: Ib ≤ In ≤ Iz, so the cable must also carry the breaker rating In
-  const brkSel = $('breaker').value;
-  const In = brkSel==='auto' ? BREAKERS.find(b=>b>=I-1e-9) : +brkSel;
-  if(In===undefined){ fail(capMsg); return; }
-  if(In<I-1e-9){ fail(fill(t('verdict_brk'),{b:In,i:fmt(I,1)})); return; }
+  // Protective device: Ib ≤ In ≤ Iz, so the conductor must also carry In (the smallest standard rating ≥ I).
+  // Since In ≥ Ib, the size for In is the current-capacity limit shown in the result.
+  const In = BREAKERS.find(b=>b>=I-1e-9);
+  if(In===undefined){ fail(fill(t('verdict_inmax'),{m:BREAKERS[BREAKERS.length-1]})); return; }
   const reqIn = In/derate/matFactor;
   const aBrkIdx = firstIdx((s,i)=>table[i]>=reqIn);
   const dropIdx = firstIdx((s,i)=>vd(i)<=VdAllow+1e-9);
   if(aAmpIdx<0||aBrkIdx<0||dropIdx<0){ fail(capMsg); return; }
 
-  const chosenIdx = Math.max(dropIdx, aAmpIdx, aBrkIdx);
+  const chosenIdx = Math.max(dropIdx, aBrkIdx);
   const chosen = SZ[chosenIdx];
   const it = table[chosenIdx];
   if(it==null){ fail(capMsg); return; }                // size not tabulated for this method
@@ -668,7 +666,7 @@ function calc(){
   const loss = (isTP ? 3 : 2)*I*I*R;     // watts
 
   $('verdict').innerHTML = '';
-  crit({drop:dropIdx===chosenIdx, amp:aAmpIdx===chosenIdx, brk:aBrkIdx===chosenIdx});
+  crit({drop:dropIdx===chosenIdx, amp:aBrkIdx===chosenIdx});
   document.body.classList.toggle('busbar', isBar);
   $('noteCable').style.display = isBar ? 'none' : '';
   $('noteBar').style.display = isBar ? '' : 'none';
@@ -676,10 +674,10 @@ function calc(){
   $('actualDrop').textContent = fmt(Vd,2)+' V ('+fmt(VdPct,2)+'%)';
   $('loadV').textContent = fmt(V-Vd,1)+' V';
   $('vdropSize').textContent = lab(dropIdx);
-  $('ampSize').textContent = lab(aAmpIdx);
-  $('ampIb').textContent = 'I = '+fmt(I,1)+' A';
-  $('brkSize').textContent = lab(aBrkIdx);
-  $('brkIn').textContent = 'In = '+In+' A';
+  $('ampSize').textContent = lab(aBrkIdx);
+  $('ampIb').textContent = 'I = '+fmt(I,1)+' A · In = '+In+' A';
+  $('inVal').textContent = In+' A';
+  $('inNote').textContent = t('in_note')+(aBrkIdx>aAmpIdx ? ' '+fill(t('in_raise'),{sz:lab(aAmpIdx)}) : '');
   $('capacity').textContent = fmt(capacity,1)+' A';
   $('util').textContent = fmt(util,0)+'%';
   $('loss').textContent = fmt(loss,0)+' W';
@@ -708,9 +706,10 @@ function calc(){
 
 function fail(msg){
   $('verdict').innerHTML='<span class="badge b-bad">'+msg+'</span>';
-  ['actualDrop','loadV','vdropSize','ampSize','ampIb','brkSize','brkIn','capacity','util','loss','res','react']
+  ['actualDrop','loadV','vdropSize','ampSize','ampIb','inVal','capacity','util','loss','res','react']
     .forEach(id=>$(id).textContent='—');
   crit(null);
+  $('inNote').textContent='';
   $('bar').style.width='0%';
 }
 
@@ -718,13 +717,13 @@ function crit(w){
   w = w || {};
   $('limDrop').classList.toggle('crit', !!w.drop);
   $('limAmp').classList.toggle('crit', !!w.amp);
-  $('limBrk').classList.toggle('crit', !!w.brk);
 }
 
 function reset(){
-  ['actualDrop','loadV','vdropSize','ampSize','ampIb','brkSize','brkIn','capacity','util','loss','res','react']
+  ['actualDrop','loadV','vdropSize','ampSize','ampIb','inVal','capacity','util','loss','res','react']
     .forEach(id=>$(id).textContent='—');
   crit(null);
+  $('inNote').textContent='';
   $('verdict').textContent = '';
   $('bar').style.width='0%';
 }
@@ -736,7 +735,7 @@ document.querySelectorAll('input,select').forEach(el=>{
 
 // ---- Inputs: remembered per browser and mirrored into the URL so a result can be shared
 const KEYS = {bi:'barinst', bf:'barfac', ac:'acdc', ct:'ctype', V:'voltage', I:'current', P:'power', L:'length', dU:'drop', m:'method', mat:'material',
-              ins:'condtemp', T:'ambient', g:'grouping', pf:'pf', br:'breaker'};
+              ins:'condtemp', T:'ambient', g:'grouping', pf:'pf'};
 function saveInputs(){
   const q = new URLSearchParams();
   for(const [k,id] of Object.entries(KEYS)) q.set(k, $(id).value);
