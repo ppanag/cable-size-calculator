@@ -252,7 +252,7 @@
       <div class="kv"><span data-i18n="kv_util">Utilisation (I ÷ Iz)</span><span id="util">—</span></div>
       <div class="bar"><i id="bar" style="width:0%;background:var(--ok)"></i></div>
       <div class="kv"><span data-i18n="kv_loss">Power loss in cable (approx.)</span><span id="loss">—</span></div>
-      <div class="kv"><span data-i18n="kv_res">Conductor resistance</span><span id="res">—</span></div>
+      <div class="kv"><span data-i18n="kv_res">Resistance (per conductor)</span><span id="res">—</span></div>
       <div class="kv acOnly"><span data-i18n="kv_react">Reactance (per conductor)</span><span id="react">—</span></div>
 
       <div class="note" id="noteCable" data-i18n-html="note">Current-carrying capacity from IEC 60364-5-52 Annex B.</div>
@@ -368,7 +368,7 @@ const I18N = {
     verdict_temp:'No rating at {t} °C for this insulation — choose a higher-temperature insulation or a cooler route', lbl_grouping:'Circuits bunched together', kv_drop:'Voltage drop at selected size', kv_loadV:'Voltage at load',
     kv_vdrop:'Voltage-drop limit', kv_amp:'Current-capacity limit',
     kv_iz:'Current-carrying capacity (Iz)', kv_util:'Utilisation (I ÷ Iz)',
-    kv_loss:'Power loss (approx.)', kv_res:'Conductor resistance',
+    kv_loss:'Power loss (approx.)', kv_res:'Resistance (per conductor)',
     note:'Current-carrying capacity from IEC 60364-5-52 Annex B (the same values as HD 60364-5-52 / ΕΛΟΤ HD 60364-5-52 and BS 7671 Appendix 4), one multi-core cable: two loaded conductors for single-phase AC or DC, three for three-phase. <b>Tables B.52.2 – B.52.5</b> (methods A2, B2, C and D1) and <b>B.52.10 – B.52.13</b> (method E); copper and aluminium; PVC 70 °C or XLPE / EPR 90 °C. Air temperature factors Table B.52.14 (reference 30 °C), ground temperature factors Table B.52.15 (reference 20 °C), grouping Table B.52.17 (bunched) and, for cables in ducts in the ground, Table B.52.19 (ducts touching). Aluminium from 16 mm². Voltage drop per IEC 60364-5-52 Annex G: u = b (ρ L/S cos φ + λ L sin φ) I, with ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium), λ = 0.08 mΩ/m, b = 2 for single-phase and DC (no λ for DC); for three-phase the line-to-line drop is shown. Balanced load; neutral and harmonics are not considered. Sizes 1.5 to 300 mm². <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
     verdict_cap:'Exceeds {m} mm² — use parallel cables or reduce the load / length',
     lbl_distance_bar:'Busbar length (m)',
@@ -411,7 +411,7 @@ const I18N = {
     kv_vdrop:'Κριτήριο πτώσης τάσης', kv_amp:'Κριτήριο επιτρεπόμενου ρεύματος',
     kv_iz:'Μέγιστο επιτρεπόμενο ρεύμα (Iz)',
     kv_util:'Ποσοστό φόρτισης (I ÷ Iz)',
-    kv_loss:'Απώλειες ισχύος (περίπου)', kv_res:'Αντίσταση αγωγού',
+    kv_loss:'Απώλειες ισχύος (περίπου)', kv_res:'Ωμική αντίσταση (ανά αγωγό)',
     note:'Μέγιστο επιτρεπόμενο ρεύμα από το IEC 60364-5-52, Παράρτημα B (ίδιες τιμές με το ΕΛΟΤ HD 60364-5-52 και το BS 7671, Παράρτημα 4), για ένα πολυπολικό καλώδιο: δύο φορτιζόμενοι αγωγοί για μονοφασικό AC ή DC, τρεις για τριφασικό. <b>Πίνακες B.52.2 – B.52.5</b> (τρόποι εγκατάστασης A2, B2, C και D1) και <b>B.52.10 – B.52.13</b> (τρόπος E)· χαλκός και αλουμίνιο· PVC 70 °C ή XLPE / EPR 90 °C. Συντελεστές διόρθωσης θερμοκρασίας αέρα: Πίνακας B.52.14 (αναφορά 30 °C)· θερμοκρασίας εδάφους: Πίνακας B.52.15 (αναφορά 20 °C)· ομαδοποίησης: Πίνακας B.52.17 (σε δέσμη) και, για καλώδια σε σωλήνες στο έδαφος, Πίνακας B.52.19 (σωλήνες σε επαφή). Αλουμίνιο από 16 mm². Πτώση τάσης κατά IEC 60364-5-52, Παράρτημα G: u = b (ρ L/S συνφ + λ L ημφ) I, με ρ = 0,0225 Ω·mm²/m (χαλκός) ή 0,036 Ω·mm²/m (αλουμίνιο), λ = 0,08 mΩ/m, b = 2 για μονοφασικό και DC (για DC χωρίς λ)· για τριφασικό εμφανίζεται η πολική πτώση τάσης. Συμμετρικό φορτίο· δεν λαμβάνονται υπόψη ο ουδέτερος και οι αρμονικές. Διατομές 1,5 έως 300 mm². <b>Συχνότητα:</b> όλοι οι υπολογισμοί AC αφορούν 50 Hz.',
     verdict_cap:'Υπερβαίνει τα {m} mm² — χρησιμοποιήστε παράλληλα καλώδια ή μειώστε το φορτίο / το μήκος',
     lbl_distance_bar:'Μήκος ζυγού (m)',
