@@ -147,7 +147,7 @@
         <label data-i18n="lbl_ctype">Type</label>
         <select id="ctype">
           <option value="cable" selected data-i18n="opt_cable">Insulated cable</option>
-          <option value="bar" data-i18n="opt_bar">Copper busbar / bare conductor — 70 °C</option>
+          <option value="bar" data-i18n="opt_bar">Busbar / bare conductor — 70 °C</option>
         </select>
       </div>
 
@@ -181,7 +181,7 @@
 
       <details class="more">
         <summary data-i18n="more">Other options</summary>
-      <div class="row cableonly">
+      <div class="row">
         <div class="field">
           <label data-i18n="lbl_conductor">Conductor</label>
           <select id="material">
@@ -293,16 +293,18 @@ const AL_MIN = 16;
 const GRP = { air:[1,0.80,0.70,0.65,0.60,0.57], duct:[1,0.85,0.75,0.70,0.65,0.60] };
 // Reactance per conductor for the AC voltage drop, IEC 60364-5-52 Annex G (λ, when no other data)
 const LAMBDA = 0.08;   // mΩ/m
-// Bare copper conductors / busbars, sized as a continuous cross-section (whole mm²), not standard bars.
+// Bare copper or aluminium conductors / busbars, sized as a continuous cross-section (whole mm²), not standard bars.
 // Rating at 35 °C air and 65 °C conductor: lower envelope of the DIN 43671 values for single bare Cu bars
 // (24 sizes 12×2 … 200×10 from the Ampac table, plus 12×5, 15×5, 12×10, 20×10, 30×10 from Siemens LV 10):
-// I = BAR_C × A^BAR_P lies at or below every tabulated bar (76–100 %; thick, narrow bars are the limit).
+// I = C × A^P lies at or below every tabulated bar (76–100 %; thick, narrow bars are the limit).
+// Aluminium: the same way from the DIN 43670 values of the same Ampac table (24 sizes; about 0.8 × copper).
 // Converted to a 70 °C conductor as × ((70 − ambient) ÷ 30 K)^BAR_N, BAR_N = mean of the Siemens 65/85 °C fits.
-const BAR_C = 9.45, BAR_P = 0.719, BAR_N = 0.543, BAR_MAX = 2000;
+const BAR_FIT = {cu:{C:9.45, P:0.719}, al:{C:7.45, P:0.731}}, BAR_N = 0.543, BAR_MAX = 2000;
 const BAR_TMAX = 70, BAR_MAX_AMB = 60;   // 70 °C conductor; below 10 K rise the conversion is not trusted
 const BAR_SIZES = Array.from({length:BAR_MAX}, (_,i)=>i+1);   // 1 … 2000 mm²
-function barRating(A, amb){
-  return BAR_C*Math.pow(A, BAR_P)*Math.pow((BAR_TMAX-amb)/30, BAR_N);
+function barRating(A, amb, mat){
+  const f = BAR_FIT[mat];
+  return f.C*Math.pow(A, f.P)*Math.pow((BAR_TMAX-amb)/30, BAR_N);
 }
 // Shape assumed for the AC effects: width = 4 × thickness, thickness at most 10 mm
 function barShape(A){
@@ -314,8 +316,8 @@ function barShape(A){
 // k·ω·(μ0/2π)·ln(d ÷ GMR), GMR = 0.2235 (w + t), at BAR_SPACING centres (k = 2 single-phase, √3 three-phase
 // equilateral). Proximity effect is not included.
 const BAR_SPACING = 60;   // mm, bar centre to centre
-function barAC(b, k){
-  const delta = Math.sqrt(RHO.cu*1e-6/(Math.PI*50*4e-7*Math.PI))*1000;   // mm
+function barAC(b, k, mat){
+  const delta = Math.sqrt(RHO[mat]*1e-6/(Math.PI*50*4e-7*Math.PI))*1000;   // mm
   const x = b.t/delta;
   const ks = (x/2)*(Math.sinh(x)+Math.sin(x))/(Math.cosh(x)-Math.cos(x));
   const X = k*2*Math.PI*50*2e-7*Math.log(BAR_SPACING/(0.2235*(b.w+b.t)))*1000;   // mV/A/m; k = 2 (two bars) or √3 (three)
@@ -336,10 +338,10 @@ const I18N = {
     hint_barfac:'Assumed value, not from a standard — use the manufacturer\'s figure.',
     opt_ac3:'AC 3-phase', lbl_voltage_ll:'Voltage, line-to-line (V)',
     lbl_acdc:'Current type', opt_ac:'AC 1-phase', opt_dc:'DC', kv_react:'Reactance (per conductor)',
-    lbl_ctype:'Type', opt_cable:'Insulated cable', opt_bar:'Copper busbar / bare conductor — 70 °C', critical_bar:'✓ Sets the busbar size',
+    lbl_ctype:'Type', opt_cable:'Insulated cable', opt_bar:'Busbar / bare conductor — 70 °C', critical_bar:'✓ Sets the busbar size',
     verdict_cap_bar:'Exceeds 2000 mm² — use several conductors in parallel or reduce the load / length',
     verdict_bartemp:'No rating at {t} °C ambient — less than 10 K of temperature rise remains up to 70 °C',
-    noteBar:'Bare copper conductors and busbars, one conductor per pole / phase, at a maximum conductor temperature of 70 °C. The required cross-section is calculated as a continuous value and rounded up to the next 1 mm² (not a standard bar size). Current rating: lower envelope of the DIN 43671 continuous currents for single bare copper bars (24–2000 mm²; 35 °C air, 65 °C bar; Ampac table and Siemens LV 10 catalogue), I = 9.45 × A<sup>0.719</sup>, at or below every tabulated bar (76–100% of the table value; thick, narrow bars are the limiting case — wider, thinner bars carry more). Converted to 70 °C and your ambient as × ((70 °C − ambient) ÷ 30 K)<sup>0.543</sup>, the exponent from the Siemens 65 / 85 °C values. Below 24 mm² the curve is extrapolated. <b>Approximate</b> — mounting position and spacing are not considered. Voltage drop uses the IEC 60364-5-52 Annex G design resistivity, ρ = 0.0225 Ω·mm²/m. <b>AC (50 Hz):</b> a bar of width = 4 × thickness (thickness up to 10 mm) is assumed; the resistance is multiplied by the skin-effect factor of that thickness, the rating is divided by its square root, and the reactance of two parallel bars at 60 mm centres is added, x = 0.126 · ln[d ÷ (0.2235 (w + t))] mΩ/m (three-phase, three bars: 0.109 instead of 0.126); voltage drop = I × L × (r cos φ + x sin φ). Proximity effect and harmonics are not considered. <b>DC:</b> resistance only. <b>In trunking / enclosure:</b> the free-air rating is multiplied by the enclosure derating factor you enter; the default 0.80 is an assumption, not a standard value — for manufactured busbar trunking use the manufacturer’s system rating. <b>Frequency:</b> the AC calculation is for 50 Hz. At 60 Hz the reactance is about 20% higher and the skin effect slightly higher; the effect on the result is small for resistance-dominated circuits, but it can matter for large sizes at low power factor. Verify against local regulations.',
+    noteBar:'Bare copper or aluminium conductors and busbars, one conductor per pole / phase, at a maximum conductor temperature of 70 °C. The required cross-section is calculated as a continuous value and rounded up to the next 1 mm² (not a standard bar size). Current rating: lower envelope of the DIN 43671 continuous currents for single bare copper bars (24–2000 mm²; 35 °C air, 65 °C bar; Ampac table and Siemens LV 10 catalogue), I = 9.45 × A<sup>0.719</sup>, at or below every tabulated bar (76–100% of the table value; thick, narrow bars are the limiting case — wider, thinner bars carry more). <b>Aluminium:</b> the same way from the DIN 43670 values of the same table, I = 7.45 × A<sup>0.731</sup>, at or below every tabulated bar (about 0.8 × copper). Converted to 70 °C and your ambient as × ((70 °C − ambient) ÷ 30 K)<sup>0.543</sup>, the exponent from the Siemens 65 / 85 °C values. Below 24 mm² the curve is extrapolated. <b>Approximate</b> — mounting position and spacing are not considered. Voltage drop uses the IEC 60364-5-52 Annex G design resistivity, ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium). <b>AC (50 Hz):</b> a bar of width = 4 × thickness (thickness up to 10 mm) is assumed; the resistance is multiplied by the skin-effect factor of that thickness, the rating is divided by its square root, and the reactance of two parallel bars at 60 mm centres is added, x = 0.126 · ln[d ÷ (0.2235 (w + t))] mΩ/m (three-phase, three bars: 0.109 instead of 0.126); voltage drop = I × L × (r cos φ + x sin φ). Proximity effect and harmonics are not considered. <b>DC:</b> resistance only. <b>In trunking / enclosure:</b> the free-air rating is multiplied by the enclosure derating factor you enter; the default 0.80 is an assumption, not a standard value — for manufactured busbar trunking use the manufacturer’s system rating. <b>Frequency:</b> the AC calculation is for 50 Hz. At 60 Hz the reactance is about 20% higher and the skin effect slightly higher; the effect on the result is small for resistance-dominated circuits, but it can matter for large sizes at low power factor. Verify against local regulations.',
     lbl_usebrk:'Size for the protective device (Ib ≤ In ≤ Iz)',
     verdict_missing:'Enter {list} to see the result.', miss_v:'the voltage', miss_load:'the current or the power', miss_len:'the length', miss_drop:'the maximum voltage drop',
     lbl_pf:'Power factor (cos φ)', kv_in:'Protective device rating (In)',
@@ -377,10 +379,10 @@ const I18N = {
     hint_barfac:'Παραδοχή, όχι τιμή προτύπου — χρησιμοποιήστε την τιμή του κατασκευαστή.',
     opt_ac3:'AC τριφασικό', lbl_voltage_ll:'Πολική τάση (V)',
     lbl_acdc:'Είδος ρεύματος', opt_ac:'AC μονοφασικό', opt_dc:'DC', kv_react:'Επαγωγική αντίσταση (ανά αγωγό)',
-    lbl_ctype:'Τύπος', opt_cable:'Μονωμένο καλώδιο', opt_bar:'Χάλκινος ζυγός / γυμνός αγωγός — 70 °C', critical_bar:'✓ Καθορίζει τη διατομή του ζυγού',
+    lbl_ctype:'Τύπος', opt_cable:'Μονωμένο καλώδιο', opt_bar:'Ζυγός / γυμνός αγωγός — 70 °C', critical_bar:'✓ Καθορίζει τη διατομή του ζυγού',
     verdict_cap_bar:'Υπερβαίνει τα 2000 mm² — χρησιμοποιήστε περισσότερους αγωγούς παράλληλα ή μειώστε το φορτίο / το μήκος',
     verdict_bartemp:'Δεν δίνεται επιτρεπόμενο ρεύμα για θερμοκρασία περιβάλλοντος {t} °C — η ανύψωση θερμοκρασίας που απομένει έως τους 70 °C είναι μικρότερη από 10 K',
-    noteBar:'Γυμνοί χάλκινοι αγωγοί και ζυγοί, ένας αγωγός ανά πόλο / φάση, με μέγιστη θερμοκρασία αγωγού 70 °C. Η απαιτούμενη διατομή υπολογίζεται ως συνεχής τιμή και στρογγυλοποιείται προς τα πάνω στο επόμενο 1 mm² (όχι σε τυποποιημένη διάσταση ζυγού). Επιτρεπόμενο ρεύμα: κατώτερη περιβάλλουσα των συνεχών ρευμάτων κατά DIN 43671 για μεμονωμένους γυμνούς χάλκινους ζυγούς (24–2000 mm²· αέρας 35 °C, ζυγός 65 °C· πίνακας Ampac και κατάλογος Siemens LV 10), I = 9,45 × A<sup>0,719</sup>, ίση ή μικρότερη από κάθε ζυγό του πίνακα (76–100% της τιμής του πίνακα· οριακή περίπτωση οι παχιοί, στενοί ζυγοί — οι φαρδύτεροι και λεπτότεροι φέρουν περισσότερο ρεύμα). Αναγωγή στους 70 °C και στη θερμοκρασία περιβάλλοντος με × ((70 °C − περιβάλλον) ÷ 30 K)<sup>0,543</sup>, εκθέτης από τις τιμές 65 / 85 °C του καταλόγου Siemens. Κάτω από 24 mm² η καμπύλη προεκτείνεται. <b>Προσεγγιστικές τιμές</b> — δεν λαμβάνονται υπόψη η θέση τοποθέτησης και οι αποστάσεις. Η πτώση τάσης υπολογίζεται με την ειδική αντίσταση σχεδιασμού του IEC 60364-5-52, Παράρτημα G, ρ = 0,0225 Ω·mm²/m. <b>AC (50 Hz):</b> θεωρείται ζυγός με πλάτος = 4 × πάχος (πάχος έως 10 mm)· η αντίσταση πολλαπλασιάζεται με τον συντελεστή επιδερμικού φαινομένου αυτού του πάχους, το επιτρεπόμενο ρεύμα διαιρείται με την τετραγωνική του ρίζα και προστίθεται η επαγωγική αντίσταση δύο παράλληλων ζυγών με απόσταση αξόνων 60 mm, x = 0,126 · ln[d ÷ (0,2235 (w + t))] mΩ/m (τριφασικό, τρεις ζυγοί: 0,109 αντί για 0,126)· πτώση τάσης = I × L × (r συνφ + x ημφ). Δεν λαμβάνονται υπόψη το φαινόμενο γειτνίασης και οι αρμονικές. <b>DC:</b> μόνο η ωμική αντίσταση. <b>Μέσα σε κανάλι / περίβλημα:</b> το ρεύμα ελεύθερου αέρα πολλαπλασιάζεται με τον συντελεστή μείωσης που εισάγετε· η προεπιλογή 0,80 είναι παραδοχή και όχι τιμή προτύπου — για έτοιμα συστήματα ζυγών (busbar trunking) χρησιμοποιήστε την τιμή του κατασκευαστή. <b>Συχνότητα:</b> ο υπολογισμός AC αφορά 50 Hz. Στα 60 Hz η επαγωγική αντίσταση είναι περίπου 20% μεγαλύτερη και το επιδερμικό φαινόμενο ελαφρώς μεγαλύτερο· η επίδραση στο αποτέλεσμα είναι μικρή για κυκλώματα με κυρίαρχη την ωμική αντίσταση, αλλά μπορεί να έχει σημασία για μεγάλες διατομές με χαμηλό συντελεστή ισχύος.',
+    noteBar:'Γυμνοί αγωγοί και ζυγοί από χαλκό ή αλουμίνιο, ένας αγωγός ανά πόλο / φάση, με μέγιστη θερμοκρασία αγωγού 70 °C. Η απαιτούμενη διατομή υπολογίζεται ως συνεχής τιμή και στρογγυλοποιείται προς τα πάνω στο επόμενο 1 mm² (όχι σε τυποποιημένη διάσταση ζυγού). Επιτρεπόμενο ρεύμα: κατώτερη περιβάλλουσα των συνεχών ρευμάτων κατά DIN 43671 για μεμονωμένους γυμνούς χάλκινους ζυγούς (24–2000 mm²· αέρας 35 °C, ζυγός 65 °C· πίνακας Ampac και κατάλογος Siemens LV 10), I = 9,45 × A<sup>0,719</sup>, ίση ή μικρότερη από κάθε ζυγό του πίνακα (76–100% της τιμής του πίνακα· οριακή περίπτωση οι παχιοί, στενοί ζυγοί — οι φαρδύτεροι και λεπτότεροι φέρουν περισσότερο ρεύμα). <b>Αλουμίνιο:</b> με τον ίδιο τρόπο από τις τιμές DIN 43670 του ίδιου πίνακα, I = 7,45 × A<sup>0,731</sup>, ίση ή μικρότερη από κάθε ζυγό του πίνακα (περίπου 0,8 × χαλκός). Αναγωγή στους 70 °C και στη θερμοκρασία περιβάλλοντος με × ((70 °C − περιβάλλον) ÷ 30 K)<sup>0,543</sup>, εκθέτης από τις τιμές 65 / 85 °C του καταλόγου Siemens. Κάτω από 24 mm² η καμπύλη προεκτείνεται. <b>Προσεγγιστικές τιμές</b> — δεν λαμβάνονται υπόψη η θέση τοποθέτησης και οι αποστάσεις. Η πτώση τάσης υπολογίζεται με την ειδική αντίσταση σχεδιασμού του IEC 60364-5-52, Παράρτημα G, ρ = 0,0225 Ω·mm²/m (χαλκός) ή 0,036 Ω·mm²/m (αλουμίνιο). <b>AC (50 Hz):</b> θεωρείται ζυγός με πλάτος = 4 × πάχος (πάχος έως 10 mm)· η αντίσταση πολλαπλασιάζεται με τον συντελεστή επιδερμικού φαινομένου αυτού του πάχους, το επιτρεπόμενο ρεύμα διαιρείται με την τετραγωνική του ρίζα και προστίθεται η επαγωγική αντίσταση δύο παράλληλων ζυγών με απόσταση αξόνων 60 mm, x = 0,126 · ln[d ÷ (0,2235 (w + t))] mΩ/m (τριφασικό, τρεις ζυγοί: 0,109 αντί για 0,126)· πτώση τάσης = I × L × (r συνφ + x ημφ). Δεν λαμβάνονται υπόψη το φαινόμενο γειτνίασης και οι αρμονικές. <b>DC:</b> μόνο η ωμική αντίσταση. <b>Μέσα σε κανάλι / περίβλημα:</b> το ρεύμα ελεύθερου αέρα πολλαπλασιάζεται με τον συντελεστή μείωσης που εισάγετε· η προεπιλογή 0,80 είναι παραδοχή και όχι τιμή προτύπου — για έτοιμα συστήματα ζυγών (busbar trunking) χρησιμοποιήστε την τιμή του κατασκευαστή. <b>Συχνότητα:</b> ο υπολογισμός AC αφορά 50 Hz. Στα 60 Hz η επαγωγική αντίσταση είναι περίπου 20% μεγαλύτερη και το επιδερμικό φαινόμενο ελαφρώς μεγαλύτερο· η επίδραση στο αποτέλεσμα είναι μικρή για κυκλώματα με κυρίαρχη την ωμική αντίσταση, αλλά μπορεί να έχει σημασία για μεγάλες διατομές με χαμηλό συντελεστή ισχύος.',
     lbl_usebrk:'Διαστασιολόγηση για τη διάταξη προστασίας (Ib ≤ In ≤ Iz)',
     verdict_missing:'Συμπληρώστε {list} για να εμφανιστεί το αποτέλεσμα.', miss_v:'την τάση', miss_load:'την ένταση ή την ισχύ', miss_len:'το μήκος', miss_drop:'τη μέγιστη πτώση τάσης',
     lbl_pf:'Συντελεστής ισχύος (συνφ)', kv_in:'Ονομαστικό ρεύμα διάταξης προστασίας (In)',
@@ -538,7 +540,7 @@ function calc(){
   const isEnc = isBar && $('barinst').value==='enc';
   $('barFacField').style.display = isEnc ? '' : 'none';
   const encF = isEnc ? Math.min(1, Math.max(0.1, +$('barfac').value || 0.8)) : 1;   // enclosure derating (bars)
-  const mat = isBar ? 'cu' : $('material').value;        // 'cu' | 'al'
+  const mat = $('material').value;                     // 'cu' | 'al'
   const method = isBar ? 'C' : $('method').value;        // A|B|C|E|D
   const amb=+$('ambient').value, nGrp = Math.min(6, Math.max(1, Math.round(+$('grouping').value) || 1));
   const condTemp = isBar ? BAR_TMAX : +$('condtemp').value;
@@ -575,17 +577,17 @@ function calc(){
   // r and x per candidate (mV/A/m, whole circuit; k = 2 or √3): IEC 60364-5-52 Annex G for cables,
   // u = b (ρ L/S cos φ + λ L sin φ) I; busbars add a skin-effect factor ks and their own reactance
   const rx = SZ.map((a,i)=>{
-    const e = !isAC ? {ks:1,x:0} : isBar ? barAC(barShape(a), k) : {ks:1, x:k*LAMBDA};
+    const e = !isAC ? {ks:1,x:0} : isBar ? barAC(barShape(a), k, mat) : {ks:1, x:k*LAMBDA};
     return {r:k*rho*1000/a*e.ks, x:e.x, ks:e.ks};
   });
-  if(isBar) table = SZ.map((a,i)=>barRating(a,amb)/Math.sqrt(rx[i].ks));
+  if(isBar) table = SZ.map((a,i)=>barRating(a,amb,mat)/Math.sqrt(rx[i].ks));
   const vd = i => I*L*(rx[i].r*pf + rx[i].x*sinPhi)/1000;   // volts
 
   const lab = i => fmt(SZ[i],2)+' mm²';
   const maxAvail = Math.max(...SZ.filter((s,i)=>table[i]!=null));
   const capMsg = isBar ? t('verdict_cap_bar') : fill(t('verdict_cap'),{m:maxAvail});
   const derate = tf*grp;
-  const minSize = isAl ? AL_MIN : 0;
+  const minSize = isAl && !isBar ? AL_MIN : 0;
   const reqBase = I/derate;                  // required tabulated rating
   const firstIdx = pred => SZ.findIndex((s,i)=>s>=minSize && pred(s,i));
 
