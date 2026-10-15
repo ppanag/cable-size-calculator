@@ -396,7 +396,7 @@ const I18N = {
     lbl_pf:'Συντελεστής ισχύος (συνφ)', kv_in:'Ονομαστικό ρεύμα διάταξης προστασίας (In)',
     in_note:'Το In είναι η μικρότερη τυποποιημένη τιμή που είναι ίση ή μεγαλύτερη από το Ib. Κατά το IEC 60364-4-43, 433.1 (παλαιότερα ΕΛΟΤ HD 384, 433.2), πρέπει Ib ≤ In ≤ Iz, οπότε η διατομή επιλέγεται ώστε Iz ≥ In. Προϋποτίθεται διακόπτης ισχύος (I2 = 1,45 In)· με ασφάλειες gG απαιτείται επιπλέον περίπου In ≤ 0,9 Iz.',
     in_raise:'Με βάση μόνο το ρεύμα φορτίου θα αρκούσε διατομή {sz}.',
-    verdict_inmax:'Το ρεύμα φορτίου υπερβαίνει τα {m} A, τη μεγαλύτερη τιμή διάταξης προστασίας που περιλαμβάνεται στον υπολογιστή — μοιράστε το φορτίο ή χρησιμοποιήστε παράλληλα κυκλώματα',
+    verdict_inmax:'Το ρεύμα φορτίου υπερβαίνει τα {m} A, τη μεγαλύτερη ονομαστική τιμή διάταξης προστασίας που περιλαμβάνεται στον υπολογιστή — μοιράστε το φορτίο ή χρησιμοποιήστε παράλληλα κυκλώματα',
     title:'Υπολογιστής διατομής καλωδίου',
     subtitle:'Διαστασιολόγηση με κριτήρια πτώσης τάσης και μέγιστου επιτρεπόμενου ρεύματος',
     h_inputs:'Δεδομένα', h_result:'Αποτέλεσμα',
@@ -576,11 +576,11 @@ function calc(){
   $('grpLbl').textContent = t($('grpLbl').dataset.i18n);
   let tf, SZ, table;
   if(isBar){
-    if(amb>BAR_MAX_AMB){ fail(fill(t('verdict_bartemp'),{t:amb})); return; }
+    if(amb>BAR_MAX_AMB){ fail(fill(t('verdict_bartemp'),{t:fmt(amb,1)})); return; }
     tf = encF; SZ = BAR_SIZES;
   } else {
     tf = buried ? groundFactor(amb, condTemp) : airFactor(amb, condTemp);
-    if(tf===null){ fail(fill(t('verdict_temp'),{t:amb})); return; }
+    if(tf===null){ fail(fill(t('verdict_temp'),{t:fmt(amb,1)})); return; }
     SZ = SIZES; table = AMP[mat][condTemp][isTP ? 3 : 2][method];
   }
   // r and x per candidate (mV/A/m, whole circuit; k = 2 or √3): IEC 60364-5-52 Annex G for cables,
