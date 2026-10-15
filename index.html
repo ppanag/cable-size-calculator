@@ -234,12 +234,12 @@
 
       <div class="limits">
         <div class="lim" id="limDrop">
-          <div class="t" data-i18n="kv_vdrop">Voltage-drop limit</div>
+          <div class="t" data-i18n="kv_vdrop">By voltage drop</div>
           <div class="v"><span id="vdropSize">—</span></div>
           <div class="tag" data-i18n="critical">✓ Sets the cable size</div>
         </div>
         <div class="lim" id="limAmp">
-          <div class="t" data-i18n="kv_amp">Current-carrying capacity limit</div>
+          <div class="t" data-i18n="kv_amp">By current-carrying capacity</div>
           <div class="v"><span id="ampSize">—</span></div>
           <div class="sub" id="ampIb"></div>
           <div class="tag" data-i18n="critical">✓ Sets the cable size</div>
@@ -360,7 +360,7 @@ const I18N = {
     lbl_condtemp:'Insulation (max. conductor temperature)', opt_pvc:'PVC — 70 °C', opt_xlpe:'XLPE / EPR — 90 °C',
     lbl_ambient:'Ambient temperature (°C)', lbl_ground:'Ground temperature (°C)',
     verdict_temp:'No rating at an ambient (or ground) temperature of {t} °C for this insulation — choose a higher-temperature insulation or a cooler route', lbl_grouping:'Number of circuits grouped together', kv_drop:'Voltage drop', kv_loadV:'Voltage at load',
-    kv_vdrop:'Voltage-drop limit', kv_amp:'Current-carrying capacity limit',
+    kv_vdrop:'By voltage drop', kv_amp:'By current-carrying capacity',
     kv_iz:'Current-carrying capacity (Iz)', kv_util:'Utilisation (Ib ÷ Iz)',
     kv_loss:'Power loss', kv_res:'Resistance (per conductor)',
     note:'Current-carrying capacity from IEC 60364-5-52 Annex B (the same values as HD 60364-5-52 / ΕΛΟΤ HD 60364-5-52 and BS 7671 Appendix 4), for one multi-core cable: two loaded conductors for 1-phase AC or DC, three for 3-phase. <b>Tables B.52.2 – B.52.5</b> (methods A2, B2, C and D1) and <b>B.52.10 – B.52.13</b> (method E); copper and aluminium; PVC 70 °C or XLPE / EPR 90 °C. Air temperature factors: Table B.52.14 (reference 30 °C); ground temperature factors: Table B.52.15 (reference 20 °C); grouping reduction factors: Table B.52.17 (bunched) and, for cables in ducts in the ground, Table B.52.19 (ducts touching). Aluminium from 16 mm². Voltage drop per IEC 60364-5-52 Annex G: u = b (ρ L/S cos φ + λ L sin φ) I, with ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium), λ = 0.08 mΩ/m, b = 2 for 1-phase and DC (no λ for DC) and b = 1 for 3-phase (phase voltage drop), so the line-to-line drop √3 × u is shown. Balanced load; neutral and harmonics are not considered. Sizes 1.5 to 300 mm². <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
