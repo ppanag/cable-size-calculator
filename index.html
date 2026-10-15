@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="el">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Υπολογιστής Διατομής Καλωδίου</title>
+<title>Cable Size Calculator</title>
 <style>
   :root{
     --bg:#0f1419; --card:#1a2129; --card2:#222b35; --line:#2e3a47;
@@ -63,8 +63,6 @@
   .check{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted);margin:2px 0 13px;cursor:pointer;line-height:1.35}
   .check input{width:16px;height:16px;margin:0;flex:none;accent-color:var(--accent)}
   .kvnote{font-size:.74rem;color:var(--muted);line-height:1.45;margin:2px 0 8px}
-  .steps{font-size:.85rem;line-height:1.7;color:#c3ccd6;margin:0;padding-left:18px}
-  .steps b{color:var(--fg)}
   .or{display:flex;align-items:center;gap:10px;font-size:.74rem;color:var(--muted);margin:-2px 0 10px}
   .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
   .field input.auto{border-style:dashed;color:var(--muted);background:transparent}
@@ -156,11 +154,11 @@
       <div class="field cableonly">
           <label data-i18n="lbl_method">Installation method</label>
         <select id="method">
-          <option value="A" data-i18n="opt_A">A — in conduit in a thermally insulated wall</option>
-          <option value="B" data-i18n="opt_B">B — in conduit or trunking on a wall</option>
+          <option value="A" data-i18n="opt_A">A2 — multi-core cable in conduit in a thermally insulated wall</option>
+          <option value="B" data-i18n="opt_B">B2 — multi-core cable in conduit or trunking on a wall</option>
           <option value="C" selected data-i18n="opt_C">C — clipped direct to a wall</option>
           <option value="E" data-i18n="opt_E">E — in free air / on a perforated tray</option>
-          <option value="D" data-i18n="opt_D">D — buried, in a duct</option>
+          <option value="D" data-i18n="opt_D">D1 — in a duct in the ground</option>
         </select>
       </div>
 
@@ -215,14 +213,14 @@
       </div>
 
       <div class="field cableonly">
-        <label data-i18n="lbl_grouping">Circuits bunched together</label>
+        <label id="grpLbl" data-i18n="lbl_grouping">Circuits bunched together</label>
         <select id="grouping">
-          <option value="1.0">1</option>
-          <option value="0.8">2</option>
-          <option value="0.7">3</option>
-          <option value="0.65">4</option>
-          <option value="0.6">5</option>
-          <option value="0.57">6</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
         </select>
       </div>
       </details>
@@ -257,47 +255,44 @@
       <div class="kv"><span data-i18n="kv_res">Conductor resistance</span><span id="res">—</span></div>
       <div class="kv acOnly"><span data-i18n="kv_react">Reactance (per conductor)</span><span id="react">—</span></div>
 
-      <div class="note" id="noteCable" data-i18n-html="note">Current-carrying capacity from BS 7671 Appendix 4.</div>
+      <div class="note" id="noteCable" data-i18n-html="note">Current-carrying capacity from IEC 60364-5-52 Annex B.</div>
       <div class="note" id="noteBar" data-i18n-html="noteBar" style="display:none"></div>
     </div>
-  </div>
-
-  <div class="card" style="margin-top:18px">
-    <h2 data-i18n="h_how">How it was calculated</h2>
-    <ol class="steps" id="steps">
-      <li data-i18n="step1">Compute the allowable voltage drop in volts.</li>
-      <li data-i18n="step2">Find the minimum cross-sectional area from the voltage-drop formula.</li>
-      <li data-i18n="step3">Find the minimum size that can carry the current (tabulated rating ÷ correction factors).</li>
-      <li data-i18n="step4">Pick the larger requirement and round up to the next standard cable size.</li>
-    </ol>
   </div>
 
   <footer>Made by <a href="https://github.com/ppanag" target="_blank" rel="noopener">Panux</a></footer>
 </div>
 
 <script>
-const SIZES = [1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300,400];
+const SIZES = [1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300];
 
-// Current-carrying capacity (A), copper, one two-core cable, single-phase AC or DC,
-// 30 °C air / 20 °C ground, for SIZES (1.5 … 400 mm²). Verified against BS 7671:2018 reprints.
-// null = not tabulated (method A and the ground method D1 stop at 300 mm²).
-// 70 = PVC: methods A/B/C/E Table 4D2A cols 2/4/6/8; D = Table 4D4A (armoured) D1, ducts in ground.
-// 90 = XLPE: methods A/B/C/E Table 4E2A cols 2/4/6/8; D = Table 4E4A (armoured) D1.
+// Current-carrying capacity (A), IEC 60364-5-52:2009 Annex B (= HD 60364-5-52, ΕΛΟΤ HD 60364-5-52), for SIZES
+// (1.5 … 300 mm²; aluminium from 2.5 mm²). AMP[material][insulation][loaded conductors][method]:
+// 70 = PVC, 90 = XLPE / EPR; 2 loaded = single-phase AC or DC, 3 loaded = three-phase.
+// Methods: A = A2 (multi-core cable in conduit in a thermally insulated wall), B = B2 (multi-core cable in conduit
+// on a wall), C (clipped direct), D = D1 (multi-core cable in a duct in the ground) — Tables B.52.2 to B.52.5;
+// E (multi-core cable in free air) — Tables B.52.10 to B.52.13. 30 °C air, 20 °C ground.
 const AMP = {
-  70:{A:[14,18.5,25,32,43,57,75,92,110,139,167,192,219,248,291,334,null],
-      B:[16.5,23,30,38,52,69,90,111,133,168,201,232,258,294,344,394,470],
-      C:[19.5,27,36,46,63,85,112,138,168,213,258,299,344,392,461,530,634],
-      E:[22,30,40,51,70,94,119,148,180,232,282,328,379,434,514,593,715],
-      D:[22,29,37,46,60,78,99,119,140,173,204,231,261,292,336,379,null]},
-  90:{A:[18.5,25,33,42,57,76,99,121,145,183,220,253,290,329,386,442,null],
-      B:[22,30,40,51,69,91,119,146,175,221,265,305,334,384,459,532,625],
-      C:[24,33,45,58,80,107,138,171,209,269,328,382,441,506,599,693,803],
-      E:[26,36,49,63,86,115,149,185,225,289,352,410,473,542,641,741,865],
-      D:[25,33,43,53,71,91,116,139,164,203,239,271,306,343,395,446,null]}
+ cu:{
+  70:{2:{A:[14,18.5,25,32,43,57,75,92,110,139,167,192,219,248,291,334], B:[16.5,23,30,38,52,69,90,111,133,168,201,232,258,294,344,394], C:[19.5,27,36,46,63,85,112,138,168,213,258,299,344,392,461,530], E:[22,30,40,51,70,94,119,148,180,232,282,328,379,434,514,593], D:[22,29,37,46,60,78,99,119,140,173,204,231,261,292,336,379]},
+      3:{A:[13,17.5,23,29,39,52,68,83,99,125,150,172,196,223,261,298], B:[15,20,27,34,46,62,80,99,118,149,179,206,225,255,297,339], C:[17.5,24,32,41,57,76,96,119,144,184,223,259,299,341,403,464], E:[18.5,25,34,43,60,80,101,126,153,196,238,276,319,364,430,497], D:[18,24,30,38,50,64,82,98,116,143,169,192,217,243,280,316]}},
+  90:{2:{A:[18.5,25,33,42,57,76,99,121,145,183,220,253,290,329,386,442], B:[22,30,40,51,69,91,119,146,175,221,265,305,334,384,459,532], C:[24,33,45,58,80,107,138,171,209,269,328,382,441,506,599,693], E:[26,36,49,63,86,115,149,185,225,289,352,410,473,542,641,741], D:[25,33,43,53,71,91,116,139,164,203,239,271,306,343,395,446]},
+      3:{A:[16.5,22,30,38,51,68,89,109,130,164,197,227,259,295,346,396], B:[19.5,26,35,44,60,80,105,128,154,194,233,268,300,340,398,455], C:[22,30,40,52,71,96,119,147,179,229,278,322,371,424,500,576], E:[23,32,42,54,75,100,127,158,192,246,298,346,399,456,538,621], D:[21,28,36,44,58,75,96,115,135,167,197,223,251,281,324,365]}}
+},
+ al:{
+  70:{2:{A:[null,14.5,19.5,25,33,44,58,71,86,108,130,150,172,195,229,263], B:[null,17.5,24,30,41,54,71,86,104,131,157,181,201,230,269,308], C:[null,21,28,36,49,66,83,103,125,160,195,226,261,298,352,406], E:[null,23,31,39,54,73,89,111,135,173,210,244,282,322,380,439], D:[null,22,29,36,47,61,77,93,109,135,159,180,204,228,262,296]},
+      3:{A:[null,13.5,17.5,23,31,41,53,65,78,98,118,135,155,176,207,237], B:[null,15.5,21,27,36,48,62,77,92,116,139,160,176,199,232,265], C:[null,18.5,25,32,44,59,73,90,110,140,170,197,227,259,305,351], E:[null,19.5,26,33,46,61,78,96,117,150,183,212,245,280,330,381], D:[null,18.5,24,30,39,50,64,77,91,112,132,150,169,190,218,247]}},
+  90:{2:{A:[null,19.5,26,33,45,60,78,96,115,145,175,201,230,262,307,352], B:[null,23,31,40,54,72,94,115,138,175,210,242,261,300,358,415], C:[null,26,35,45,62,84,101,126,154,198,241,280,324,371,439,508], E:[null,28,38,49,67,91,108,135,164,211,257,300,346,397,470,543], D:[null,26,33,42,55,71,90,108,128,158,186,211,238,267,307,346]},
+      3:{A:[null,18,24,31,41,55,71,87,104,131,157,180,206,233,273,313], B:[null,21,28,35,48,64,84,103,124,156,188,216,240,272,318,364], C:[null,24,32,41,57,76,90,112,136,174,211,245,283,323,382,440], E:[null,24,32,42,58,77,97,120,146,187,227,263,304,347,409,471], D:[null,22,28,35,46,59,75,90,106,130,154,174,197,220,253,286]}}
+}
 };
-// Aluminium: approximated as 0.78 × copper (no Al table built in), and only from 16 mm²,
-// the smallest aluminium size BS 7671 tabulates.
-const AL_FACTOR = 0.78, AL_MIN = 16;
+// Aluminium is used from 16 mm² (smaller aluminium conductors are not used in practice)
+const AL_MIN = 16;
+// Grouping factors: Table B.52.17 item 1 (bunched in air, on a surface, embedded or enclosed) and Table B.52.19
+// (multi-core cables in single-way ducts in the ground, ducts touching), for 1 … 6 circuits
+const GRP = { air:[1,0.80,0.70,0.65,0.60,0.57], duct:[1,0.85,0.75,0.70,0.65,0.60] };
+// Reactance per conductor for the AC voltage drop, IEC 60364-5-52 Annex G (λ, when no other data)
+const LAMBDA = 0.08;   // mΩ/m
 // Bare copper conductors / busbars, sized as a continuous cross-section (whole mm²), not standard bars.
 // Rating at 35 °C air and 65 °C conductor: lower envelope of the DIN 43671 values for single bare Cu bars
 // (24 sizes 12×2 … 200×10 from the Ampac table, plus 12×5, 15×5, 12×10, 20×10, 30×10 from Siemens LV 10):
@@ -314,45 +309,13 @@ function barShape(A){
   const t = Math.min(10, Math.sqrt(A/4));
   return {w:A/t, t};
 }
-// Three-phase: one three- or four-core cable, columns 3/5/7/9 of Tables 4D2A / 4E2A (methods A/B/C/E)
-// and the three-core D1 column of 4D4A / 4E4A (method D).
-const AMP3 = {
-  70:{A:[13,17.5,23,29,39,52,68,83,99,125,150,172,196,223,261,298,null],
-      B:[15,20,27,34,46,62,80,99,118,149,179,206,225,255,297,339,402],
-      C:[17.5,24,32,41,57,76,96,119,144,184,223,259,299,341,403,464,557],
-      E:[18.5,25,34,43,60,80,101,126,153,196,238,276,319,364,430,497,597],
-      D:[18,24,30,38,50,64,82,98,116,143,169,192,217,243,280,316,null]},
-  90:{A:[16.5,22,30,38,51,68,89,109,130,164,197,227,259,295,346,396,null],
-      B:[19.5,26,35,44,60,80,105,128,154,194,233,268,300,340,398,455,536],
-      C:[22,30,40,52,71,96,119,147,179,229,278,322,371,424,500,576,667],
-      E:[23,32,42,54,75,100,127,158,192,246,298,346,399,456,538,621,741],
-      D:[21,28,36,44,58,75,96,115,135,167,197,223,251,281,324,365,null]}
-};
-// Voltage drop of copper cables, mV/A/m, BS 7671:2018 Table 4D2B (70 °C) and 4E2B (90 °C; identical to
-// 4E4B), per size: [DC, single-phase r, single-phase x, three-phase r, three-phase x]. Below 25 mm² the
-// tables give one value per column and no reactance.
-const VD = {
-  70:{1.5:[29,29,0,25,0],2.5:[18,18,0,15,0],4:[11,11,0,9.5,0],6:[7.3,7.3,0,6.4,0],10:[4.4,4.4,0,3.8,0],16:[2.8,2.8,0,2.4,0],25:[1.75,1.75,0.17,1.5,0.145],35:[1.25,1.25,0.165,1.1,0.145],50:[0.93,0.93,0.165,0.8,0.14],70:[0.63,0.63,0.16,0.55,0.14],95:[0.46,0.47,0.155,0.41,0.135],120:[0.36,0.38,0.155,0.33,0.135],150:[0.29,0.3,0.155,0.26,0.13],185:[0.23,0.25,0.15,0.21,0.13],240:[0.18,0.19,0.15,0.165,0.13],300:[0.145,0.155,0.145,0.135,0.13],400:[0.105,0.115,0.145,0.1,0.125]},
-  90:{1.5:[31,31,0,27,0],2.5:[19,19,0,16,0],4:[12,12,0,10,0],6:[7.9,7.9,0,6.8,0],10:[4.7,4.7,0,4,0],16:[2.9,2.9,0,2.5,0],25:[1.85,1.85,0.16,1.6,0.14],35:[1.35,1.35,0.155,1.15,0.135],50:[0.98,0.99,0.155,0.86,0.135],70:[0.67,0.67,0.15,0.59,0.13],95:[0.49,0.5,0.15,0.43,0.13],120:[0.39,0.4,0.145,0.34,0.13],150:[0.31,0.32,0.145,0.28,0.125],185:[0.25,0.26,0.145,0.22,0.125],240:[0.195,0.2,0.14,0.175,0.125],300:[0.155,0.16,0.14,0.14,0.12],400:[0.12,0.13,0.14,0.115,0.12]}
-};
-// r and x (mV/A/m) of a copper cable for 'dc' | 'ac' | 'ac3'
-function cableRX(size, tmax, mode){
-  const v = VD[tmax][size];
-  return mode==='dc' ? {r:v[0], x:0} : mode==='ac' ? {r:v[1], x:v[2]} : {r:v[3], x:v[4]};
-}
-// Aluminium (no table here): AC ratio ks = r AC ÷ r DC and reactance taken from the copper table.
-// Three-phase: ks = r(3-phase) ÷ (√3/2 × r DC), never below 1.
-function alAC(size, tmax, tp){
-  const v = VD[tmax][size];
-  return tp ? {ks:Math.max(1, v[3]/(v[0]*Math.sqrt(3)/2)), x:v[4]} : {ks:v[1]/v[0], x:v[2]};
-}
 // AC effects of a flat bar at 50 Hz. ks: skin-effect factor of a slab of the bar's thickness,
 // (x/2)(sinh x + sin x)/(cosh x − cos x), x = thickness ÷ skin depth. x: reactance of two parallel bars,
 // k·ω·(μ0/2π)·ln(d ÷ GMR), GMR = 0.2235 (w + t), at BAR_SPACING centres (k = 2 single-phase, √3 three-phase
 // equilateral). Proximity effect is not included.
 const BAR_SPACING = 60;   // mm, bar centre to centre
 function barAC(b, k){
-  const delta = Math.sqrt(RHO70.cu*1e-6/(Math.PI*50*4e-7*Math.PI))*1000;   // mm
+  const delta = Math.sqrt(RHO.cu*1e-6/(Math.PI*50*4e-7*Math.PI))*1000;   // mm
   const x = b.t/delta;
   const ks = (x/2)*(Math.sinh(x)+Math.sin(x))/(Math.cosh(x)-Math.cos(x));
   const X = k*2*Math.PI*50*2e-7*Math.log(BAR_SPACING/(0.2235*(b.w+b.t)))*1000;   // mV/A/m; k = 2 (two bars) or √3 (three)
@@ -362,23 +325,20 @@ function barAC(b, k){
 // the smallest one ≥ the load current is assumed
 const BREAKERS = [6,10,13,16,20,25,32,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250];
 
-// IEC 60364-5-52 Annex G design resistivity (1.25 × ρ20), used for 70 °C conductors and busbars; scaled
-// with α for 90 °C. Used for aluminium and busbars (copper cables use the VD table).
-const RHO70 = {cu:0.0225, al:0.036};
-const ALPHA = {cu:0.00393, al:0.00403};
+// IEC 60364-5-52 Annex G: resistivity in normal service, 1.25 × ρ20 (Ω·mm²/m)
+const RHO = {cu:0.0225, al:0.036};
 
 // ---------------- i18n ----------------
 const I18N = {
   en:{
+    lbl_grouping_d:'Cables in adjacent ducts (touching)',
     lbl_barinst:'Installation', opt_barair:'In free air', opt_barenc:'In trunking / enclosure', lbl_barfac:'Enclosure derating factor',
-    hint_barfac:'Assumed value, not from a standard — use the manufacturer\'s figure.', step_enc:', × {f} enclosure derating',
+    hint_barfac:'Assumed value, not from a standard — use the manufacturer\'s figure.',
     opt_ac3:'AC 3-phase', lbl_voltage_ll:'Voltage, line-to-line (V)',
     lbl_acdc:'Current type', opt_ac:'AC 1-phase', opt_dc:'DC', kv_react:'Reactance (per conductor)',
-    step_vd_ac:'AC voltage drop = I × L × (r·cos φ + x·sin φ) ÷ 1000, with r (AC resistance) and x (reactance) of the circuit per metre → smallest size <b>{size}</b> (r = {r}, x = {x} mV/A/m, cos φ = {pf})',
     lbl_ctype:'Type', opt_cable:'Insulated cable', opt_bar:'Copper busbar / bare conductor — 70 °C', critical_bar:'✓ Sets the busbar size',
     verdict_cap_bar:'Exceeds 2000 mm² — use several conductors in parallel or reduce the load / length',
     verdict_bartemp:'No rating at {t} °C ambient — less than 10 K of temperature rise remains up to 70 °C',
-    step_amp_bar:'Current capacity: {i} A → required cross-section <b>{amp}</b> (rated <b>{itAmp} A</b> at 70 °C conductor, {a} °C ambient{enc})',
     noteBar:'Bare copper conductors and busbars, one conductor per pole / phase, at a maximum conductor temperature of 70 °C. The required cross-section is calculated as a continuous value and rounded up to the next 1 mm² (not a standard bar size). Current rating: lower envelope of the DIN 43671 continuous currents for single bare copper bars (24–2000 mm²; 35 °C air, 65 °C bar; Ampac table and Siemens LV 10 catalogue), I = 9.45 × A<sup>0.719</sup>, at or below every tabulated bar (76–100% of the table value; thick, narrow bars are the limiting case — wider, thinner bars carry more). Converted to 70 °C and your ambient as × ((70 °C − ambient) ÷ 30 K)<sup>0.543</sup>, the exponent from the Siemens 65 / 85 °C values. Below 24 mm² the curve is extrapolated. <b>Approximate</b> — mounting position and spacing are not considered. Voltage drop uses the IEC 60364-5-52 Annex G design resistivity, ρ = 0.0225 Ω·mm²/m. <b>AC (50 Hz):</b> a bar of width = 4 × thickness (thickness up to 10 mm) is assumed; the resistance is multiplied by the skin-effect factor of that thickness, the rating is divided by its square root, and the reactance of two parallel bars at 60 mm centres is added, x = 0.126 · ln[d ÷ (0.2235 (w + t))] mΩ/m (three-phase, three bars: 0.109 instead of 0.126); voltage drop = I × L × (r cos φ + x sin φ). Proximity effect and harmonics are not considered. <b>DC:</b> resistance only. <b>In trunking / enclosure:</b> the free-air rating is multiplied by the enclosure derating factor you enter; the default 0.80 is an assumption, not a standard value — for manufactured busbar trunking use the manufacturer’s system rating. <b>Frequency:</b> the AC calculation is for 50 Hz. At 60 Hz the reactance is about 20% higher and the skin effect slightly higher; the effect on the result is small for resistance-dominated circuits, but it can matter for large sizes at low power factor. Verify against local regulations.',
     lbl_usebrk:'Size for the protective device (Ib ≤ In ≤ Iz)',
     verdict_missing:'Enter {list} to see the result.', miss_v:'the voltage', miss_load:'the current or the power', miss_len:'the length', miss_drop:'the maximum voltage drop',
@@ -386,10 +346,9 @@ const I18N = {
     in_note:'Smallest standard rating ≥ I. The conductor must carry In (Ib ≤ In ≤ Iz), so the current-capacity limit is sized for In.',
     in_raise:'On the load current alone, {sz} would be enough.',
     verdict_inmax:'Load current above {m} A, the largest standard protective device rating here — split the load or use parallel circuits',
-    step_brk:'Protective device: In = <b>{b} A</b> (smallest standard rating ≥ {i} A); {b} A ÷ {d} = <b>{req} A</b> tabulated rating required → smallest size <b>{sz}</b> (tabulated {it} A)',
     title:'Cable Size Calculator',
     subtitle:'Voltage-drop & current-carrying capacity sizing',
-    h_inputs:'Inputs', h_result:'Result', h_how:'How it was calculated',
+    h_inputs:'Inputs', h_result:'Result',
     lbl_power:'Power (kW)', hint_load:'Enter either current or power; the other is calculated (for AC, set the power factor under Other options).', critical:'✓ Sets the cable size', more:'Other options',
     lbl_voltage:'Voltage (V)', lbl_current:'Current (A)',
     lbl_distance:'Cable length (m)',
@@ -397,42 +356,30 @@ const I18N = {
     lbl_drop:'Max voltage drop (%)',
     lbl_conductor:'Conductor', opt_cu:'Copper', opt_al:'Aluminium',
     lbl_method:'Installation method',
-    opt_A:'A — in conduit in a thermally insulated wall',
-    opt_B:'B — in conduit or trunking on a wall',
+    opt_A:'A2 — multi-core cable in conduit in a thermally insulated wall',
+    opt_B:'B2 — multi-core cable in conduit or trunking on a wall',
     opt_C:'C — clipped direct to a wall',
     opt_E:'E — in free air / on a perforated tray',
-    opt_D:'D — buried, in a duct',
+    opt_D:'D1 — in a duct in the ground',
     lbl_condtemp:'Insulation (max. conductor temp)', opt_pvc:'PVC — 70 °C', opt_xlpe:'XLPE / EPR — 90 °C',
     lbl_ambient:'Ambient temp (°C)', lbl_ground:'Ground temp (°C)',
     verdict_temp:'No rating at {t} °C for this insulation — choose a higher-temperature insulation or a cooler route', lbl_grouping:'Circuits bunched together', kv_drop:'Voltage drop at selected size', kv_loadV:'Voltage at load',
     kv_vdrop:'Voltage-drop limit', kv_amp:'Current-capacity limit',
     kv_iz:'Current-carrying capacity (Iz)', kv_util:'Utilisation (I ÷ Iz)',
     kv_loss:'Power loss (approx.)', kv_res:'Conductor resistance',
-    note:'Current-carrying capacity from BS 7671:2018 Appendix 4, one two-core cable (single-phase AC or DC) or one three- / four-core cable (three-phase AC): <b>Table 4D2A</b> (PVC, 70 °C) or <b>Table 4E2A</b> (XLPE, 90 °C), copper conductors, non-armoured; buried cables use <b>Tables 4D4A / 4E4A</b> method D1 (armoured, in ducts). Air temperature factors Table 4B1 (reference 30 °C), ground temperature factors Table 4B2 (reference 20 °C), grouping Table 4C1. Aluminium is approximated as 0.78 × copper, from 16 mm². Voltage drop of copper cables uses the mV/A/m values of BS 7671 <b>Tables 4D2B / 4E2B</b> (DC, single-phase and three-phase columns). <b>AC (50 Hz):</b> voltage drop = I × L × (r cos φ + x sin φ), with the tabulated AC resistance r and reactance x (reactance from 25 mm²; smaller sizes have none tabulated). <b>Three-phase:</b> line-to-line voltage drop, balanced load (neutral and harmonics are not considered). Aluminium has no table here: it uses the IEC 60364-5-52 Annex G design resistivity, 0.036 Ω·mm²/m (increased for 90 °C), with the AC ratios of copper (conservative). Buried cables (method D) use the bunched-in-air grouping factors of Table 4C1 as an approximation; BS 7671 Table 4B3 gives specific factors for cables in ducts in the ground. Sizes 1.5 to 400 mm², the range of the two-core tables (methods A and D stop at 300 mm²). <b>Frequency:</b> the AC values are for 50 Hz (BS 7671 tables). At 60 Hz the reactance is about 20% higher and the skin effect slightly higher; the effect on the result is small for resistance-dominated circuits, but it can matter for large sizes at low power factor. Verify against local regulations.',
-    step1:'Compute the allowable voltage drop in volts.',
-    step2:'Find the minimum cross-sectional area from the voltage-drop formula.',
-    step3:'Find the minimum size that can carry the current (tabulated rating ÷ correction factors).',
-    step4:'Pick the larger requirement and round up to the next standard cable size.',
+    note:'Current-carrying capacity from IEC 60364-5-52 Annex B (the same values as HD 60364-5-52 / ΕΛΟΤ HD 60364-5-52 and BS 7671 Appendix 4), one multi-core cable: two loaded conductors for single-phase AC or DC, three for three-phase. <b>Tables B.52.2 – B.52.5</b> (methods A2, B2, C and D1) and <b>B.52.10 – B.52.13</b> (method E); copper and aluminium; PVC 70 °C or XLPE / EPR 90 °C. Air temperature factors Table B.52.14 (reference 30 °C), ground temperature factors Table B.52.15 (reference 20 °C), grouping Table B.52.17 (bunched) and, for cables in ducts in the ground, Table B.52.19 (ducts touching). Aluminium from 16 mm². Voltage drop per IEC 60364-5-52 Annex G: u = b (ρ L/S cos φ + λ L sin φ) I, with ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium), λ = 0.08 mΩ/m, b = 2 for single-phase and DC (no λ for DC); for three-phase the line-to-line drop is shown. Balanced load; neutral and harmonics are not considered. Sizes 1.5 to 300 mm². <b>Frequency:</b> λ = 0.08 mΩ/m is a generic value; at 60 Hz the reactance is about 20% higher, which matters only for large sizes at low power factor. Verify against local regulations.',
     verdict_cap:'Exceeds {m} mm² — use parallel cables or reduce the load / length',
-    step_allowed:'Allowed drop: <b>{vd} V</b> ({pct}% of {v} V)',
-    step_rho:'ρ = <b>{rho}</b> Ω·mm²/m (IEC 60364-5-52 Annex G design value{adj})', rho_adj90:', increased for 90 °C',
-    step_rtab:'{rx} from BS 7671 Table <b>{tb}</b> (conductor at {t} °C), in mV/A/m', rx_ac:'r and x',
-    step_vd_dc:'Voltage drop = I × L × r ÷ 1000 → smallest size <b>{size}</b> (r = {r} mV/A/m)',
     lbl_distance_bar:'Busbar length (m)',
-    step_area:'{eq} → <b>{a} mm²</b> → {size}',
-    step_amp:'Current capacity: {i} A ÷ {d} (correction factors) = <b>{req} A</b> tabulated rating required; method {m} → smallest size <b>{amp}</b> (tabulated {itAmp} A)',
-    step_final:'The larger of the two sizes governs → <b>{ch}</b>'
   },
   el:{
+    lbl_grouping_d:'Καλώδια σε γειτονικούς σωλήνες (σε επαφή)',
     lbl_barinst:'Εγκατάσταση', opt_barair:'Ελεύθερα στον αέρα', opt_barenc:'Σε κανάλι / περίβλημα', lbl_barfac:'Συντελεστής μείωσης λόγω περιβλήματος',
-    hint_barfac:'Παραδοχή, όχι τιμή προτύπου — χρησιμοποιήστε την τιμή του κατασκευαστή.', step_enc:', × {f} μείωση λόγω περιβλήματος',
+    hint_barfac:'Παραδοχή, όχι τιμή προτύπου — χρησιμοποιήστε την τιμή του κατασκευαστή.',
     opt_ac3:'AC τριφασικό', lbl_voltage_ll:'Πολική τάση (V)',
     lbl_acdc:'Είδος ρεύματος', opt_ac:'AC μονοφασικό', opt_dc:'DC', kv_react:'Επαγωγική αντίσταση (ανά αγωγό)',
-    step_vd_ac:'Πτώση τάσης AC = I × L × (r·συνφ + x·ημφ) ÷ 1000, με r (αντίσταση AC) και x (επαγωγική αντίσταση) του κυκλώματος ανά μέτρο → ελάχιστη διατομή <b>{size}</b> (r = {r}, x = {x} mV/A/m, συνφ = {pf})',
     lbl_ctype:'Τύπος', opt_cable:'Μονωμένο καλώδιο', opt_bar:'Χάλκινος ζυγός / γυμνός αγωγός — 70 °C', critical_bar:'✓ Καθορίζει τη διατομή του ζυγού',
     verdict_cap_bar:'Υπερβαίνει τα 2000 mm² — χρησιμοποιήστε περισσότερους αγωγούς παράλληλα ή μειώστε το φορτίο / το μήκος',
     verdict_bartemp:'Δεν δίνεται επιτρεπόμενο ρεύμα για θερμοκρασία περιβάλλοντος {t} °C — η ανύψωση θερμοκρασίας που απομένει έως τους 70 °C είναι μικρότερη από 10 K',
-    step_amp_bar:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A → απαιτούμενη διατομή <b>{amp}</b> (επιτρεπόμενο ρεύμα <b>{itAmp} A</b> με θερμοκρασία αγωγού 70 °C, περιβάλλον {a} °C{enc})',
     noteBar:'Γυμνοί χάλκινοι αγωγοί και ζυγοί, ένας αγωγός ανά πόλο / φάση, με μέγιστη θερμοκρασία αγωγού 70 °C. Η απαιτούμενη διατομή υπολογίζεται ως συνεχής τιμή και στρογγυλοποιείται προς τα πάνω στο επόμενο 1 mm² (όχι σε τυποποιημένη διάσταση ζυγού). Επιτρεπόμενο ρεύμα: κατώτερη περιβάλλουσα των συνεχών ρευμάτων κατά DIN 43671 για μεμονωμένους γυμνούς χάλκινους ζυγούς (24–2000 mm²· αέρας 35 °C, ζυγός 65 °C· πίνακας Ampac και κατάλογος Siemens LV 10), I = 9,45 × A<sup>0,719</sup>, ίση ή μικρότερη από κάθε ζυγό του πίνακα (76–100% της τιμής του πίνακα· οριακή περίπτωση οι παχιοί, στενοί ζυγοί — οι φαρδύτεροι και λεπτότεροι φέρουν περισσότερο ρεύμα). Αναγωγή στους 70 °C και στη θερμοκρασία περιβάλλοντος με × ((70 °C − περιβάλλον) ÷ 30 K)<sup>0,543</sup>, εκθέτης από τις τιμές 65 / 85 °C του καταλόγου Siemens. Κάτω από 24 mm² η καμπύλη προεκτείνεται. <b>Προσεγγιστικές τιμές</b> — δεν λαμβάνονται υπόψη η θέση τοποθέτησης και οι αποστάσεις. Η πτώση τάσης υπολογίζεται με την ειδική αντίσταση σχεδιασμού του IEC 60364-5-52, Παράρτημα G, ρ = 0,0225 Ω·mm²/m. <b>AC (50 Hz):</b> θεωρείται ζυγός με πλάτος = 4 × πάχος (πάχος έως 10 mm)· η αντίσταση πολλαπλασιάζεται με τον συντελεστή επιδερμικού φαινομένου αυτού του πάχους, το επιτρεπόμενο ρεύμα διαιρείται με την τετραγωνική του ρίζα και προστίθεται η επαγωγική αντίσταση δύο παράλληλων ζυγών με απόσταση αξόνων 60 mm, x = 0,126 · ln[d ÷ (0,2235 (w + t))] mΩ/m (τριφασικό, τρεις ζυγοί: 0,109 αντί για 0,126)· πτώση τάσης = I × L × (r συνφ + x ημφ). Δεν λαμβάνονται υπόψη το φαινόμενο γειτνίασης και οι αρμονικές. <b>DC:</b> μόνο η ωμική αντίσταση. <b>Μέσα σε κανάλι / περίβλημα:</b> το ρεύμα ελεύθερου αέρα πολλαπλασιάζεται με τον συντελεστή μείωσης που εισάγετε· η προεπιλογή 0,80 είναι παραδοχή και όχι τιμή προτύπου — για έτοιμα συστήματα ζυγών (busbar trunking) χρησιμοποιήστε την τιμή του κατασκευαστή. <b>Συχνότητα:</b> ο υπολογισμός AC αφορά 50 Hz. Στα 60 Hz η επαγωγική αντίσταση είναι περίπου 20% μεγαλύτερη και το επιδερμικό φαινόμενο ελαφρώς μεγαλύτερο· η επίδραση στο αποτέλεσμα είναι μικρή για κυκλώματα με κυρίαρχη την ωμική αντίσταση, αλλά μπορεί να έχει σημασία για μεγάλες διατομές με χαμηλό συντελεστή ισχύος.',
     lbl_usebrk:'Διαστασιολόγηση για τη διάταξη προστασίας (Ib ≤ In ≤ Iz)',
     verdict_missing:'Συμπληρώστε {list} για να εμφανιστεί το αποτέλεσμα.', miss_v:'την τάση', miss_load:'την ένταση ή την ισχύ', miss_len:'το μήκος', miss_drop:'τη μέγιστη πτώση τάσης',
@@ -440,10 +387,9 @@ const I18N = {
     in_note:'Η μικρότερη τυποποιημένη τιμή ≥ I. Ο αγωγός πρέπει να φέρει το In (Ib ≤ In ≤ Iz), γι’ αυτό το κριτήριο επιτρεπόμενου ρεύματος διαστασιολογείται με το In.',
     in_raise:'Μόνο με το ρεύμα φορτίου θα αρκούσαν {sz}.',
     verdict_inmax:'Ρεύμα φορτίου μεγαλύτερο από {m} A, τη μεγαλύτερη τυποποιημένη τιμή διάταξης προστασίας εδώ — μοιράστε το φορτίο ή χρησιμοποιήστε παράλληλα κυκλώματα',
-    step_brk:'Διάταξη προστασίας: In = <b>{b} A</b> (μικρότερη τυποποιημένη τιμή ≥ {i} A)· {b} A ÷ {d} = <b>{req} A</b> απαιτούμενη τιμή πίνακα → ελάχιστη διατομή <b>{sz}</b> (τιμή πίνακα {it} A)',
     title:'Υπολογιστής Διατομής Καλωδίου',
     subtitle:'Διαστασιολόγηση με κριτήρια πτώσης τάσης και μέγιστου επιτρεπόμενου ρεύματος',
-    h_inputs:'Δεδομένα', h_result:'Αποτέλεσμα', h_how:'Πώς υπολογίστηκε',
+    h_inputs:'Δεδομένα', h_result:'Αποτέλεσμα',
     lbl_power:'Ισχύς (kW)', hint_load:'Συμπληρώστε ένταση ή ισχύ· η άλλη τιμή υπολογίζεται αυτόματα (για AC, ο συντελεστής ισχύος ορίζεται στις Άλλες επιλογές).', critical:'✓ Καθορίζει τη διατομή', more:'Άλλες επιλογές',
     lbl_voltage:'Τάση (V)', lbl_current:'Ένταση ρεύματος (A)',
     lbl_distance:'Μήκος καλωδίου (m)',
@@ -451,11 +397,11 @@ const I18N = {
     lbl_drop:'Μέγιστη πτώση τάσης (%)',
     lbl_conductor:'Αγωγός', opt_cu:'Χαλκός', opt_al:'Αλουμίνιο',
     lbl_method:'Τρόπος εγκατάστασης',
-    opt_A:'A — σε σωλήνα, εντοιχισμένο σε θερμομονωμένο τοίχο',
-    opt_B:'B — σε σωλήνα ή κανάλι, επιτοίχια',
+    opt_A:'A2 — πολυπολικό καλώδιο σε σωλήνα, εντοιχισμένο σε θερμομονωμένο τοίχο',
+    opt_B:'B2 — πολυπολικό καλώδιο σε σωλήνα ή κανάλι, επιτοίχια',
     opt_C:'C — επιτοίχια, στερεωμένο απευθείας στον τοίχο',
     opt_E:'E — ελεύθερα στον αέρα / σε διάτρητο φορέα καλωδίων',
-    opt_D:'D — στο έδαφος, μέσα σε σωλήνα',
+    opt_D:'D1 — στο έδαφος, μέσα σε σωλήνα',
     lbl_condtemp:'Υλικό μόνωσης (μέγ. θερμοκρασία αγωγού)', opt_pvc:'PVC — 70 °C', opt_xlpe:'XLPE / EPR — 90 °C',
     lbl_ambient:'Θερμοκρασία περιβάλλοντος (°C)', lbl_ground:'Θερμοκρασία εδάφους (°C)',
     verdict_temp:'Δεν προβλέπεται μέγιστο επιτρεπόμενο ρεύμα στους {t} °C για αυτό το υλικό μόνωσης — επιλέξτε μόνωση υψηλότερης θερμοκρασίας ή ψυχρότερη διαδρομή', lbl_grouping:'Πλήθος ομαδοποιημένων κυκλωμάτων', kv_drop:'Πτώση τάσης στην επιλεγμένη διατομή',
@@ -464,24 +410,13 @@ const I18N = {
     kv_iz:'Μέγιστο επιτρεπόμενο ρεύμα (Iz)',
     kv_util:'Ποσοστό φόρτισης (I ÷ Iz)',
     kv_loss:'Απώλειες ισχύος (περίπου)', kv_res:'Αντίσταση αγωγού',
-    note:'Μέγιστο επιτρεπόμενο ρεύμα από το BS 7671:2018, Παράρτημα 4, για ένα διπολικό καλώδιο (μονοφασικό AC ή DC) ή ένα τριπολικό / τετραπολικό καλώδιο (τριφασικό AC): <b>Πίνακας 4D2A</b> (PVC, 70 °C) ή <b>Πίνακας 4E2A</b> (XLPE, 90 °C), χάλκινοι αγωγοί, χωρίς οπλισμό· για καλώδια στο έδαφος <b>Πίνακες 4D4A / 4E4A</b>, τρόπος εγκατάστασης D1 (οπλισμένο, μέσα σε σωλήνα). Συντελεστές διόρθωσης θερμοκρασίας αέρα: Πίνακας 4B1 (αναφορά 30 °C)· θερμοκρασίας εδάφους: Πίνακας 4B2 (αναφορά 20 °C)· ομαδοποίησης: Πίνακας 4C1. Για το αλουμίνιο λαμβάνεται κατά προσέγγιση 0,78 × χαλκός, από 16 mm². Η πτώση τάσης των χάλκινων καλωδίων υπολογίζεται με τις τιμές mV/A/m των <b>Πινάκων 4D2B / 4E2B</b> του BS 7671 (στήλες DC, μονοφασικού και τριφασικού). <b>AC (50 Hz):</b> πτώση τάσης = I × L × (r συνφ + x ημφ), με την αντίσταση AC r και την επαγωγική αντίσταση x των πινάκων (επαγωγική αντίσταση από 25 mm²· για μικρότερες διατομές δεν δίνεται). <b>Τριφασικό:</b> πολική πτώση τάσης, συμμετρικό φορτίο (δεν λαμβάνονται υπόψη ο ουδέτερος και οι αρμονικές). Για το αλουμίνιο δεν υπάρχει εδώ πίνακας: χρησιμοποιείται η ειδική αντίσταση σχεδιασμού του IEC 60364-5-52, Παράρτημα G, 0,036 Ω·mm²/m (αυξημένη για 90 °C), με τους λόγους AC του χαλκού (συντηρητικά). Για τα καλώδια στο έδαφος (τρόπος D) οι συντελεστές ομαδοποίησης του Πίνακα 4C1 (σε δέσμη, στον αέρα) χρησιμοποιούνται κατά προσέγγιση· ο Πίνακας 4B3 του BS 7671 δίνει ειδικούς συντελεστές για καλώδια σε σωλήνες στο έδαφος. Διατομές 1,5 έως 400 mm², δηλαδή το εύρος των πινάκων διπολικών καλωδίων (οι τρόποι εγκατάστασης A και D σταματούν στα 300 mm²). <b>Συχνότητα:</b> οι τιμές AC αφορούν 50 Hz (πίνακες BS 7671). Στα 60 Hz η επαγωγική αντίσταση είναι περίπου 20% μεγαλύτερη και το επιδερμικό φαινόμενο ελαφρώς μεγαλύτερο· η επίδραση στο αποτέλεσμα είναι μικρή για κυκλώματα με κυρίαρχη την ωμική αντίσταση, αλλά μπορεί να έχει σημασία για μεγάλες διατομές με χαμηλό συντελεστή ισχύος.',
-    step1:'Υπολογισμός της επιτρεπόμενης πτώσης τάσης σε V.',
-    step2:'Εύρεση της ελάχιστης διατομής από τον τύπο της πτώσης τάσης.',
-    step3:'Εύρεση της ελάχιστης διατομής που αντέχει το ρεύμα (τιμή πίνακα ÷ συντελεστές διόρθωσης).',
-    step4:'Επιλογή της μεγαλύτερης απαίτησης και στρογγυλοποίηση στην επόμενη τυποποιημένη διατομή.',
+    note:'Μέγιστο επιτρεπόμενο ρεύμα από το IEC 60364-5-52, Παράρτημα B (ίδιες τιμές με το ΕΛΟΤ HD 60364-5-52 και το BS 7671, Παράρτημα 4), για ένα πολυπολικό καλώδιο: δύο φορτιζόμενοι αγωγοί για μονοφασικό AC ή DC, τρεις για τριφασικό. <b>Πίνακες B.52.2 – B.52.5</b> (τρόποι εγκατάστασης A2, B2, C και D1) και <b>B.52.10 – B.52.13</b> (τρόπος E)· χαλκός και αλουμίνιο· PVC 70 °C ή XLPE / EPR 90 °C. Συντελεστές διόρθωσης θερμοκρασίας αέρα: Πίνακας B.52.14 (αναφορά 30 °C)· θερμοκρασίας εδάφους: Πίνακας B.52.15 (αναφορά 20 °C)· ομαδοποίησης: Πίνακας B.52.17 (σε δέσμη) και, για καλώδια σε σωλήνες στο έδαφος, Πίνακας B.52.19 (σωλήνες σε επαφή). Αλουμίνιο από 16 mm². Πτώση τάσης κατά IEC 60364-5-52, Παράρτημα G: u = b (ρ L/S συνφ + λ L ημφ) I, με ρ = 0,0225 Ω·mm²/m (χαλκός) ή 0,036 Ω·mm²/m (αλουμίνιο), λ = 0,08 mΩ/m, b = 2 για μονοφασικό και DC (για DC χωρίς λ)· για τριφασικό εμφανίζεται η πολική πτώση τάσης. Συμμετρικό φορτίο· δεν λαμβάνονται υπόψη ο ουδέτερος και οι αρμονικές. Διατομές 1,5 έως 300 mm². <b>Συχνότητα:</b> το λ = 0,08 mΩ/m είναι γενική τιμή· στα 60 Hz η επαγωγική αντίσταση είναι περίπου 20% μεγαλύτερη, κάτι που έχει σημασία μόνο για μεγάλες διατομές με χαμηλό συντελεστή ισχύος.',
     verdict_cap:'Υπερβαίνει τα {m} mm² — χρησιμοποιήστε παράλληλα καλώδια ή μειώστε το φορτίο / το μήκος',
-    step_allowed:'Επιτρεπόμενη πτώση τάσης: <b>{vd} V</b> ({pct}% των {v} V)',
-    step_rho:'ρ = <b>{rho}</b> Ω·mm²/m (τιμή σχεδιασμού IEC 60364-5-52, Παράρτημα G{adj})', rho_adj90:', αυξημένη για 90 °C',
-    step_rtab:'{rx} από τον Πίνακα <b>{tb}</b> του BS 7671 (αγωγός στους {t} °C), σε mV/A/m', rx_ac:'r και x',
-    step_vd_dc:'Πτώση τάσης = I × L × r ÷ 1000 → ελάχιστη διατομή <b>{size}</b> (r = {r} mV/A/m)',
     lbl_distance_bar:'Μήκος ζυγού (m)',
-    step_area:'{eq} → <b>{a} mm²</b> → {size}',
-    step_amp:'Κριτήριο επιτρεπόμενου ρεύματος: {i} A ÷ {d} (συντελεστές διόρθωσης) = <b>{req} A</b> απαιτούμενη τιμή πίνακα· τρόπος εγκατάστασης {m} → ελάχιστη διατομή <b>{amp}</b> (τιμή πίνακα {itAmp} A)',
-    step_final:'Επιλέγεται η μεγαλύτερη από τις δύο διατομές → <b>{ch}</b>'
   }
 };
 
-let lang = 'el';   // default language (overridden by a saved preference)
+let lang = 'en';   // default language (overridden by a saved preference)
 const $ = id => document.getElementById(id);
 function t(k){
   const d = I18N[lang] || I18N.en;
@@ -538,11 +473,11 @@ document.querySelectorAll('#lang button').forEach(b=>{
   b.onclick = ()=>{ lang = b.dataset.l; applyLang(); };
 });
 
-// Air ambient factors, reference 30 °C (BS 7671 Table 4B1). Below 25 °C the 25 °C factor is
-// kept (conservative; IEC B.52.14 would allow more). Above the last row there is no rating.
+// Air ambient factors, reference 30 °C (IEC 60364-5-52 Table B.52.14). Below 10 °C the 10 °C factor is
+// kept. Above the last row there is no rating.
 const AIR_TBL = {
-  70:[[25,1.03],[30,1.0],[35,0.94],[40,0.87],[45,0.79],[50,0.71],[55,0.61],[60,0.50]],
-  90:[[25,1.02],[30,1.0],[35,0.96],[40,0.91],[45,0.87],[50,0.82],[55,0.76],[60,0.71],
+  70:[[10,1.22],[15,1.17],[20,1.12],[25,1.06],[30,1.0],[35,0.94],[40,0.87],[45,0.79],[50,0.71],[55,0.61],[60,0.50]],
+  90:[[10,1.15],[15,1.12],[20,1.08],[25,1.04],[30,1.0],[35,0.96],[40,0.91],[45,0.87],[50,0.82],[55,0.76],[60,0.71],
       [65,0.65],[70,0.58],[75,0.50],[80,0.41]]
 };
 function airFactor(t, tmax){
@@ -554,7 +489,7 @@ function airFactor(t, tmax){
   }
   return null;
 }
-// Ground factors for buried cables, reference 20 °C (IEC 60364-5-52 B.52.15 / BS 7671 4B2):
+// Ground factors for buried cables, reference 20 °C (IEC 60364-5-52 Table B.52.15):
 // √((θmax − θg) ÷ (θmax − 20)), which reproduces the tabulated values; lowest row 10 °C.
 function groundFactor(t, tmax){
   if(t>=tmax) return null;
@@ -605,7 +540,7 @@ function calc(){
   const encF = isEnc ? Math.min(1, Math.max(0.1, +$('barfac').value || 0.8)) : 1;   // enclosure derating (bars)
   const mat = isBar ? 'cu' : $('material').value;        // 'cu' | 'al'
   const method = isBar ? 'C' : $('method').value;        // A|B|C|E|D
-  const amb=+$('ambient').value, grp = isBar ? 1 : +$('grouping').value;
+  const amb=+$('ambient').value, nGrp = Math.min(6, Math.max(1, Math.round(+$('grouping').value) || 1));
   const condTemp = isBar ? BAR_TMAX : +$('condtemp').value;
   const isAl = mat==='al';
 
@@ -618,14 +553,16 @@ function calc(){
     reset(); $('verdict').textContent = fill(t('verdict_missing'),{list:miss.join(', ')}); return;
   }
 
-  // IEC Annex G design resistivity, scaled up for 90 °C conductors
-  const rho = RHO70[mat]*(1+ALPHA[mat]*(condTemp-70));
+  const rho = RHO[mat];
 
   const VdAllow = V*dropPct/100;                       // allowed drop in volts
   const sinPhi = Math.sqrt(1-pf*pf);
 
   // SZ = candidate areas (mm²) and table = their ratings: standard cable sizes, or the listed bars
   const buried = !isBar && method==='D';
+  const grp = isBar ? 1 : GRP[buried ? 'duct' : 'air'][nGrp-1];
+  $('grpLbl').dataset.i18n = buried ? 'lbl_grouping_d' : 'lbl_grouping';
+  $('grpLbl').textContent = t($('grpLbl').dataset.i18n);
   let tf, SZ, table;
   if(isBar){
     if(amb>BAR_MAX_AMB){ fail(fill(t('verdict_bartemp'),{t:amb})); return; }
@@ -633,27 +570,23 @@ function calc(){
   } else {
     tf = buried ? groundFactor(amb, condTemp) : airFactor(amb, condTemp);
     if(tf===null){ fail(fill(t('verdict_temp'),{t:amb})); return; }
-    SZ = SIZES; table = (isTP ? AMP3 : AMP)[condTemp][method];
+    SZ = SIZES; table = AMP[mat][condTemp][isTP ? 3 : 2][method];
   }
-  // r and x per candidate (mV/A/m, whole circuit): BS 7671 table for copper cables; otherwise the design
-  // resistivity (k = 2 or √3 conductor factor) with the AC skin-effect factor ks and reactance x
-  const useTable = !isBar && !isAl;
+  // r and x per candidate (mV/A/m, whole circuit; k = 2 or √3): IEC 60364-5-52 Annex G for cables,
+  // u = b (ρ L/S cos φ + λ L sin φ) I; busbars add a skin-effect factor ks and their own reactance
   const rx = SZ.map((a,i)=>{
-    if(useTable) return cableRX(a, condTemp, mode);
-    const e = !isAC ? {ks:1,x:0} : isBar ? barAC(barShape(a), k) : alAC(a, condTemp, isTP);
+    const e = !isAC ? {ks:1,x:0} : isBar ? barAC(barShape(a), k) : {ks:1, x:k*LAMBDA};
     return {r:k*rho*1000/a*e.ks, x:e.x, ks:e.ks};
   });
   if(isBar) table = SZ.map((a,i)=>barRating(a,amb)/Math.sqrt(rx[i].ks));
   const vd = i => I*L*(rx[i].r*pf + rx[i].x*sinPhi)/1000;   // volts
 
   const lab = i => fmt(SZ[i],2)+' mm²';
-  const labS = lab;
   const maxAvail = Math.max(...SZ.filter((s,i)=>table[i]!=null));
   const capMsg = isBar ? t('verdict_cap_bar') : fill(t('verdict_cap'),{m:maxAvail});
   const derate = tf*grp;
-  const matFactor = isAl ? AL_FACTOR : 1.0;
   const minSize = isAl ? AL_MIN : 0;
-  const reqBase = I/derate/matFactor;                  // required tabulated rating
+  const reqBase = I/derate;                  // required tabulated rating
   const firstIdx = pred => SZ.findIndex((s,i)=>s>=minSize && pred(s,i));
 
   const aAmpIdx = firstIdx((s,i)=>table[i]>=reqBase);
@@ -663,7 +596,7 @@ function calc(){
   const useBrk = $('usebrk').checked;
   const In = useBrk ? BREAKERS.find(b=>b>=I-1e-9) : null;
   if(In===undefined){ fail(fill(t('verdict_inmax'),{m:BREAKERS[BREAKERS.length-1]})); return; }
-  const reqIn = useBrk ? In/derate/matFactor : reqBase;
+  const reqIn = useBrk ? In/derate : reqBase;
   const aBrkIdx = useBrk ? firstIdx((s,i)=>table[i]>=reqIn) : aAmpIdx;   // current-capacity limit
   const dropIdx = firstIdx((s,i)=>vd(i)<=VdAllow+1e-9);
   if(aAmpIdx<0||aBrkIdx<0||dropIdx<0){ fail(capMsg); return; }
@@ -672,13 +605,12 @@ function calc(){
   const chosen = SZ[chosenIdx];
   const it = table[chosenIdx];
   if(it==null){ fail(capMsg); return; }                // size not tabulated for this method
-  const itAmp = table[aAmpIdx];
 
   const R = rx[chosenIdx].r*L/k/1000;                  // ohms per conductor (AC resistance for AC)
   const Xc = rx[chosenIdx].x*L/k/1000;                 // reactance, ohms per conductor
   const Vd = vd(chosenIdx);
   const VdPct = Vd/V*100;
-  const capacity = it*derate*matFactor;                // Iz
+  const capacity = it*derate;                          // Iz
   const util = I/capacity*100;
   const loss = (isTP ? 3 : 2)*I*I*R;     // watts
 
@@ -705,23 +637,6 @@ function calc(){
 
   const bar = $('bar');
   bar.style.width = Math.min(100, util)+'%';
-
-  const eq = 'A = ('+(isTP ? '√3' : '2')+' × ρ × L × I) ÷ V<sub>drop</sub>';
-  const aDrop = (k*rho*L*I)/VdAllow;                   // mm² for voltage drop (DC)
-  $('steps').innerHTML =
-    '<li>'+fill(t('step_allowed'),{vd:fmt(VdAllow,2),pct:dropPct,v:V})+'</li>'+
-    '<li>'+(useTable ? fill(t('step_rtab'),{rx:isAC ? t('rx_ac') : 'r',tb:condTemp===90 ? '4E2B' : '4D2B',t:condTemp})
-                     : fill(t('step_rho'),{rho:fmt(rho,4),adj:condTemp===90 ? t('rho_adj90') : ''}))+'</li>'+
-    '<li>'+(isAC ? fill(t('step_vd_ac'),{size:labS(dropIdx),r:fmt(rx[dropIdx].r,3),x:fmt(rx[dropIdx].x,3),pf:fmt(pf,2)})
-          : useTable ? fill(t('step_vd_dc'),{size:labS(dropIdx),r:fmt(rx[dropIdx].r,3)})
-                 : fill(t('step_area'),{eq:eq,a:fmt(aDrop,2),size:labS(dropIdx)}))+'</li>'+
-    '<li>'+(isBar ? fill(t('step_amp_bar'),{i:fmt(I,1),a:amb,amp:labS(aAmpIdx),itAmp:fmt(itAmp*derate,0),enc:isEnc ? fill(t('step_enc'),{f:fmt(encF,2)}) : ''})
-                : fill(t('step_amp'),{i:fmt(I,1),d:fmt(derate,2),req:fmt(reqBase,1),
-        m:method,amp:lab(aAmpIdx),itAmp:fmt(itAmp,1)}))+'</li>'+
-    (useBrk ? '<li>'+fill(t('step_brk'),{i:fmt(I,1),b:In,d:fmt(derate,2),req:fmt(reqIn,1),
-        sz:labS(aBrkIdx),it:fmt(table[aBrkIdx],1)})+'</li>' : '')+
-
-    '<li>'+fill(t('step_final'),{ch:labS(chosenIdx)})+'</li>';
 }
 
 function fail(msg){
@@ -775,6 +690,7 @@ function loadInputs(){
   for(const [k,id] of Object.entries(KEYS)){
     if(!q.has(k)) continue;
     const el=$(id), v=q.get(k);
+    if(id==='grouping' && v.indexOf('.')>=0){ const n=[1,0.8,0.7,0.65,0.6,0.57].indexOf(+v); if(n>=0) el.value=String(n+1); continue; }
     if(el.tagName==='SELECT'){ if([...el.options].some(o=>o.value===v)) el.value=v; }
     else if(v!=='' && isFinite(+v)) el.value=v;
   }
