@@ -131,11 +131,11 @@
           <input id="current" type="number" value="32" min="0.1" step="any">
         </div>
         <div class="field">
-          <label data-i18n="lbl_power">Power (kW)</label>
+          <label data-i18n="lbl_power">Power at source (kW)</label>
           <input id="power" type="number" value="7.36" min="0.001" step="any">
         </div>
       </div>
-      <div class="hint" style="margin:-6px 0 13px" data-i18n="hint_load">Enter either the load current or the power (electrical input); the other is calculated. For AC, set the power factor under Other options.</div>
+      <div class="hint" style="margin:-6px 0 13px" data-i18n="hint_load">Enter either the load current or the power at the source (supply end of the cable, including cable losses); the other is calculated. For AC, set the power factor under Other options.</div>
 
       <div class="row">
         <div class="field">
@@ -350,7 +350,7 @@ const I18N = {
     verdict_bartemp:'No rating at an ambient temperature of {t} °C — less than 10 K of temperature rise would remain below the 70 °C limit',
     noteBar:'Bare copper or aluminium conductors and busbars, one conductor per pole / phase, at a maximum conductor temperature of 70 °C. The required cross-section is calculated as a continuous value and rounded up to a whole mm² (not a standard bar size). Current rating: lower envelope of the DIN 43671 continuous currents for single bare copper bars (24–2000 mm²; 35 °C air, 65 °C bar; Ampac table and Siemens LV 10 catalogue), I = 9.45 × A<sup>0.719</sup>, at or below the value of every tabulated bar (76–100% of the table value; thick, narrow bars are the limiting case — wider, thinner bars carry more). <b>Aluminium:</b> derived the same way from the DIN 43670 values of the same table, I = 7.45 × A<sup>0.731</sup>, at or below the value of every tabulated bar (about 0.8 × copper). Converted to 70 °C and your ambient temperature by multiplying by ((70 °C − ambient) ÷ 30 K)<sup>0.543</sup>, with the exponent derived from the Siemens 65 / 85 °C values. Below 24 mm² the curve is extrapolated. <b>Approximate</b> — mounting position and spacing are not considered. Voltage drop uses the IEC 60364-5-52 Annex G design resistivity, ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium). <b>AC (50 Hz):</b> a bar of width = 4 × thickness (thickness up to 10 mm) is assumed; the resistance is multiplied by the skin-effect factor of that thickness, the rating is divided by the square root of that factor, and the reactance of two parallel bars at 60 mm centres is added, x = 0.126 · ln[d ÷ (0.2235 (w + t))] mΩ/m (3-phase, three bars: 0.109 instead of 0.126); voltage drop = I × L × (r cos φ + x sin φ). Proximity effect and harmonics are not considered. <b>DC:</b> resistance only. <b>In trunking / enclosure:</b> the free-air rating is multiplied by the enclosure derating factor you enter; the default 0.80 is an assumption, not a standard value — for manufactured busbar trunking use the manufacturer’s system rating. <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
     lbl_usebrk:'Coordinate with the protective device (Ib ≤ In ≤ Iz)',
-    verdict_missing:'Enter {list} to see the result.', miss_v:'the voltage', miss_load:'the load (current or power)', miss_len:'the length', miss_drop:'the maximum voltage drop',
+    verdict_missing:'Enter {list} to see the result.', miss_v:'the voltage', miss_load:'the load current (or the power)', miss_len:'the length', miss_drop:'the maximum voltage drop',
     lbl_pf:'Power factor (cos φ)', kv_in:'Protective device rating (In)',
     in_note:'In is the smallest standard rating equal to or above Ib. IEC 60364-4-43 (433.1) requires Ib ≤ In ≤ Iz, so the cross-section is chosen so that Iz ≥ In. A circuit-breaker is assumed (I2 = 1.45 In); with gG fuses roughly In ≤ 0.9 Iz is also needed.',
     in_raise:'Based on the load current alone, {sz} would be enough.',
@@ -358,7 +358,7 @@ const I18N = {
     title:'Cable Size Calculator',
     subtitle:'Sizing by voltage drop and current-carrying capacity',
     h_inputs:'Inputs', h_result:'Result',
-    lbl_power:'Power (kW)', hint_load:'Enter either the load current or the power (electrical input); the other is calculated. For AC, set the power factor under Other options.', critical:'✓ Sets the cable size', more:'Other options',
+    lbl_power:'Power at source (kW)', hint_load:'Enter either the load current or the power at the source (supply end of the cable, including cable losses); the other is calculated. For AC, set the power factor under Other options.', critical:'✓ Sets the cable size', more:'Other options',
     lbl_voltage:'Voltage (V)', lbl_current:'Load current Ib (A)',
     lbl_distance:'Cable length (m)',
     hint_distance:'One way, source to load (not the round trip).',
@@ -392,7 +392,7 @@ const I18N = {
     verdict_bartemp:'Δεν δίνεται μέγιστο επιτρεπόμενο ρεύμα για θερμοκρασία περιβάλλοντος {t} °C — η ανύψωση θερμοκρασίας που απομένει έως τους 70 °C είναι μικρότερη από 10 K',
     noteBar:'Γυμνοί αγωγοί και ζυγοί από χαλκό ή αλουμίνιο, ένας αγωγός ανά πόλο / φάση, με μέγιστη θερμοκρασία αγωγού 70 °C. Η απαιτούμενη διατομή υπολογίζεται ως συνεχής τιμή και στρογγυλοποιείται προς τα πάνω σε ακέραιο αριθμό mm² (όχι σε τυποποιημένη διάσταση ζυγού). Επιτρεπόμενο ρεύμα: κατώτερη περιβάλλουσα των συνεχών ρευμάτων κατά DIN 43671 για μεμονωμένους γυμνούς χάλκινους ζυγούς (24–2000 mm²· αέρας 35 °C, ζυγός 65 °C· πίνακας Ampac και κατάλογος Siemens LV 10), I = 9,45 × A<sup>0,719</sup>, ίση ή μικρότερη από την τιμή κάθε ζυγού του πίνακα (76–100% της τιμής του πίνακα· οριακή περίπτωση οι παχείς, στενοί ζυγοί — οι φαρδύτεροι και λεπτότεροι φέρουν περισσότερο ρεύμα). <b>Αλουμίνιο:</b> με τον ίδιο τρόπο από τις τιμές DIN 43670 του ίδιου πίνακα, I = 7,45 × A<sup>0,731</sup>, ίση ή μικρότερη από την τιμή κάθε ζυγού του πίνακα (περίπου 0,8 × χαλκός). Αναγωγή στους 70 °C και στη θερμοκρασία περιβάλλοντος με πολλαπλασιασμό επί ((70 °C − περιβάλλον) ÷ 30 K)<sup>0,543</sup>, με εκθέτη που προκύπτει από τις τιμές 65 / 85 °C του καταλόγου Siemens. Κάτω από 24 mm² η καμπύλη προεκτείνεται. <b>Προσεγγιστικές τιμές</b> — δεν λαμβάνονται υπόψη η θέση τοποθέτησης και οι αποστάσεις. Η πτώση τάσης υπολογίζεται με την ειδική αντίσταση σχεδιασμού του IEC 60364-5-52, Παράρτημα G, ρ = 0,0225 Ω·mm²/m (χαλκός) ή 0,036 Ω·mm²/m (αλουμίνιο). <b>AC (50 Hz):</b> θεωρείται ζυγός με πλάτος = 4 × πάχος (πάχος έως 10 mm)· η αντίσταση πολλαπλασιάζεται με τον συντελεστή επιδερμικού φαινομένου αυτού του πάχους, το επιτρεπόμενο ρεύμα διαιρείται με την τετραγωνική ρίζα του συντελεστή αυτού και προστίθεται η επαγωγική αντίσταση δύο παράλληλων ζυγών με απόσταση αξόνων 60 mm, x = 0,126 · ln[d ÷ (0,2235 (w + t))] mΩ/m (τριφασικό, τρεις ζυγοί: 0,109 αντί για 0,126)· πτώση τάσης = I × L × (r συνφ + x ημφ). Δεν λαμβάνονται υπόψη το φαινόμενο γειτνίασης και οι αρμονικές. <b>DC:</b> μόνο η ωμική αντίσταση. <b>Σε κανάλι / περίβλημα:</b> το ρεύμα ελεύθερου αέρα πολλαπλασιάζεται με τον συντελεστή μείωσης που εισάγετε· η προεπιλογή 0,80 είναι παραδοχή και όχι τιμή προτύπου — για προκατασκευασμένα συστήματα ζυγών (busbar trunking) χρησιμοποιήστε την τιμή του κατασκευαστή. <b>Συχνότητα:</b> όλοι οι υπολογισμοί AC αφορούν 50 Hz.',
     lbl_usebrk:'Επιλογή διατομής σε συσχετισμό με τη διάταξη προστασίας (Ib ≤ In ≤ Iz)',
-    verdict_missing:'Συμπληρώστε {list} για να εμφανιστεί το αποτέλεσμα.', miss_v:'την τάση', miss_load:'το φορτίο (ρεύμα ή ισχύ)', miss_len:'το μήκος', miss_drop:'τη μέγιστη πτώση τάσης',
+    verdict_missing:'Συμπληρώστε {list} για να εμφανιστεί το αποτέλεσμα.', miss_v:'την τάση', miss_load:'το ρεύμα φορτίου (ή την ισχύ)', miss_len:'το μήκος', miss_drop:'τη μέγιστη πτώση τάσης',
     lbl_pf:'Συντελεστής ισχύος (συνφ)', kv_in:'Ονομαστικό ρεύμα διάταξης προστασίας (In)',
     in_note:'Το In είναι η μικρότερη τυποποιημένη τιμή που είναι ίση ή μεγαλύτερη από το Ib. Κατά το IEC 60364-4-43, 433.1 (παλαιότερα ΕΛΟΤ HD 384, 433.2), πρέπει Ib ≤ In ≤ Iz, οπότε η διατομή επιλέγεται ώστε Iz ≥ In. Προϋποτίθεται διακόπτης ισχύος (I2 = 1,45 In)· με ασφάλειες gG απαιτείται επιπλέον περίπου In ≤ 0,9 Iz.',
     in_raise:'Με βάση μόνο το ρεύμα φορτίου θα αρκούσε διατομή {sz}.',
@@ -400,7 +400,7 @@ const I18N = {
     title:'Υπολογιστής διατομής καλωδίου',
     subtitle:'Διαστασιολόγηση με κριτήρια πτώσης τάσης και μέγιστου επιτρεπόμενου ρεύματος',
     h_inputs:'Δεδομένα', h_result:'Αποτέλεσμα',
-    lbl_power:'Ισχύς (kW)', hint_load:'Συμπληρώστε ρεύμα ή ισχύ (ηλεκτρική ισχύ εισόδου)· η άλλη τιμή υπολογίζεται αυτόματα (για AC, ο συντελεστής ισχύος ορίζεται στις Άλλες επιλογές).', critical:'✓ Καθορίζει τη διατομή του καλωδίου', more:'Άλλες επιλογές',
+    lbl_power:'Ισχύς στην πηγή (kW)', hint_load:'Συμπληρώστε το ρεύμα φορτίου ή την ισχύ στην πηγή (στην αρχή της γραμμής, μαζί με τις απώλειες του καλωδίου)· η άλλη τιμή υπολογίζεται αυτόματα. Για AC, ο συντελεστής ισχύος ορίζεται στις Άλλες επιλογές.', critical:'✓ Καθορίζει τη διατομή του καλωδίου', more:'Άλλες επιλογές',
     lbl_voltage:'Τάση (V)', lbl_current:'Ρεύμα φορτίου Ib (A)',
     lbl_distance:'Μήκος καλωδίου (m)',
     hint_distance:'Μήκος μιας διαδρομής, από την πηγή έως το φορτίο (όχι μετ’ επιστροφής).',
