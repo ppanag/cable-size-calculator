@@ -113,7 +113,7 @@
           <input id="voltage" type="number" value="230" min="1" step="any">
         </div>
         <div class="field">
-          <label data-i18n="lbl_acdc">Supply system</label>
+          <label data-i18n="lbl_acdc">System</label>
           <select id="acdc">
             <option value="dc" data-i18n="opt_dc">DC</option>
             <option value="ac" selected data-i18n="opt_ac">AC 1-phase</option>
@@ -335,7 +335,7 @@ const I18N = {
     lbl_barinst:'Installation', opt_barair:'In free air', opt_barenc:'In trunking / enclosure', lbl_barfac:'Enclosure derating factor',
     hint_barfac:'Assumed value, not from a standard — use the manufacturer’s figure.',
     opt_ac3:'AC 3-phase', lbl_voltage_ll:'Voltage, line-to-line (V)',
-    lbl_acdc:'Supply system', opt_ac:'AC 1-phase', opt_dc:'DC', kv_react:'Reactance (per conductor)',
+    lbl_acdc:'System', opt_ac:'AC 1-phase', opt_dc:'DC', kv_react:'Reactance (per conductor)',
     lbl_ctype:'Type', opt_cable:'Insulated cable', opt_bar:'Busbar / bare conductor — 70 °C', critical_bar:'✓ Sets the busbar size',
     verdict_cap_bar:'The required cross-section exceeds 2000 mm² — use parallel conductors or reduce the load / length',
     verdict_bartemp:'No rating at an ambient temperature of {t} °C — less than 10 K of temperature rise would remain below the 70 °C limit',
@@ -373,7 +373,7 @@ const I18N = {
     lbl_barinst:'Εγκατάσταση', opt_barair:'Ελεύθερα στον αέρα', opt_barenc:'Σε κανάλι / περίβλημα', lbl_barfac:'Συντελεστής μείωσης λόγω περιβλήματος',
     hint_barfac:'Παραδοχή, όχι τιμή προτύπου — χρησιμοποιήστε την τιμή του κατασκευαστή.',
     opt_ac3:'AC τριφασικό', lbl_voltage_ll:'Πολική τάση (V)',
-    lbl_acdc:'Σύστημα τροφοδοσίας', opt_ac:'AC μονοφασικό', opt_dc:'DC', kv_react:'Επαγωγική αντίσταση (ανά αγωγό)',
+    lbl_acdc:'Σύστημα', opt_ac:'AC μονοφασικό', opt_dc:'DC', kv_react:'Επαγωγική αντίσταση (ανά αγωγό)',
     lbl_ctype:'Τύπος', opt_cable:'Μονωμένο καλώδιο', opt_bar:'Ζυγός / γυμνός αγωγός — 70 °C', critical_bar:'✓ Καθορίζει τη διατομή του ζυγού',
     verdict_cap_bar:'Η απαιτούμενη διατομή υπερβαίνει τα 2000 mm² — χρησιμοποιήστε παράλληλους αγωγούς ή μειώστε το φορτίο / το μήκος',
     verdict_bartemp:'Δεν δίνεται μέγιστο επιτρεπόμενο ρεύμα για θερμοκρασία περιβάλλοντος {t} °C — η ανύψωση θερμοκρασίας που απομένει έως τους 70 °C είναι μικρότερη από 10 K',
