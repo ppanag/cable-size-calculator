@@ -103,7 +103,7 @@
 
   <header>
     <h1 data-i18n="title">Cable Size Calculator</h1>
-    <p data-i18n="subtitle">Voltage-drop &amp; current-carrying capacity sizing</p>
+    <p data-i18n="subtitle">Sizing by voltage drop and current-carrying capacity</p>
   </header>
 
   <div class="grid">
@@ -135,7 +135,7 @@
           <input id="power" type="number" value="7.36" min="0.001" step="any">
         </div>
       </div>
-      <div class="hint" style="margin:-6px 0 13px" data-i18n="hint_load">Enter either current or power (electrical input power); the other is calculated (for AC, set the power factor under Other options).</div>
+      <div class="hint" style="margin:-6px 0 13px" data-i18n="hint_load">Enter either the load current or the power (electrical input); the other is calculated. For AC, set the power factor under Other options.</div>
 
       <div class="row">
         <div class="field">
@@ -179,7 +179,7 @@
         <div class="field" id="barFacField" style="display:none">
           <label data-i18n="lbl_barfac">Enclosure derating factor</label>
           <input id="barfac" type="number" value="0.8" min="0.1" max="1" step="0.01">
-          <div class="hint" data-i18n="hint_barfac">Assumed value, not from a standard — use the manufacturer's figure.</div>
+          <div class="hint" data-i18n="hint_barfac">Assumed value, not from a standard — use the manufacturer’s figure.</div>
         </div>
       </div>
 
@@ -342,23 +342,23 @@ const I18N = {
     and:'and',
     lbl_grouping_d:'Number of cables (one per duct, ducts touching)',
     lbl_barinst:'Installation', opt_barair:'In free air', opt_barenc:'In trunking / enclosure', lbl_barfac:'Enclosure derating factor',
-    hint_barfac:'Assumed value, not from a standard — use the manufacturer\'s figure.',
+    hint_barfac:'Assumed value, not from a standard — use the manufacturer’s figure.',
     opt_ac3:'AC 3-phase', lbl_voltage_ll:'Voltage, line-to-line (V)',
     lbl_acdc:'Current type', opt_ac:'AC 1-phase', opt_dc:'DC', kv_react:'Reactance (per conductor)',
     lbl_ctype:'Type', opt_cable:'Insulated cable', opt_bar:'Busbar / bare conductor — 70 °C', critical_bar:'✓ Sets the busbar size',
-    verdict_cap_bar:'The required cross-section exceeds 2000 mm² — use conductors in parallel or reduce the load / length',
-    verdict_bartemp:'No rating at {t} °C ambient — less than 10 K of temperature rise remains up to 70 °C',
-    noteBar:'Bare copper or aluminium conductors and busbars, one conductor per pole / phase, at a maximum conductor temperature of 70 °C. The required cross-section is calculated as a continuous value and rounded up to a whole mm² (not a standard bar size). Current rating: lower envelope of the DIN 43671 continuous currents for single bare copper bars (24–2000 mm²; 35 °C air, 65 °C bar; Ampac table and Siemens LV 10 catalogue), I = 9.45 × A<sup>0.719</sup>, at or below the value of every tabulated bar (76–100% of the table value; thick, narrow bars are the limiting case — wider, thinner bars carry more). <b>Aluminium:</b> the same way from the DIN 43670 values of the same table, I = 7.45 × A<sup>0.731</sup>, at or below the value of every tabulated bar (about 0.8 × copper). Converted to 70 °C and your ambient temperature by multiplying by ((70 °C − ambient) ÷ 30 K)<sup>0.543</sup>, with the exponent derived from the Siemens 65 / 85 °C values. Below 24 mm² the curve is extrapolated. <b>Approximate</b> — mounting position and spacing are not considered. Voltage drop uses the IEC 60364-5-52 Annex G design resistivity, ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium). <b>AC (50 Hz):</b> a bar of width = 4 × thickness (thickness up to 10 mm) is assumed; the resistance is multiplied by the skin-effect factor of that thickness, the rating is divided by the square root of that factor, and the reactance of two parallel bars at 60 mm centres is added, x = 0.126 · ln[d ÷ (0.2235 (w + t))] mΩ/m (3-phase, three bars: 0.109 instead of 0.126); voltage drop = I × L × (r cos φ + x sin φ). Proximity effect and harmonics are not considered. <b>DC:</b> resistance only. <b>In trunking / enclosure:</b> the free-air rating is multiplied by the enclosure derating factor you enter; the default 0.80 is an assumption, not a standard value — for manufactured busbar trunking use the manufacturer’s system rating. <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
+    verdict_cap_bar:'The required cross-section exceeds 2000 mm² — use parallel conductors or reduce the load / length',
+    verdict_bartemp:'No rating at an ambient temperature of {t} °C — less than 10 K of temperature rise would remain below the 70 °C limit',
+    noteBar:'Bare copper or aluminium conductors and busbars, one conductor per pole / phase, at a maximum conductor temperature of 70 °C. The required cross-section is calculated as a continuous value and rounded up to a whole mm² (not a standard bar size). Current rating: lower envelope of the DIN 43671 continuous currents for single bare copper bars (24–2000 mm²; 35 °C air, 65 °C bar; Ampac table and Siemens LV 10 catalogue), I = 9.45 × A<sup>0.719</sup>, at or below the value of every tabulated bar (76–100% of the table value; thick, narrow bars are the limiting case — wider, thinner bars carry more). <b>Aluminium:</b> derived the same way from the DIN 43670 values of the same table, I = 7.45 × A<sup>0.731</sup>, at or below the value of every tabulated bar (about 0.8 × copper). Converted to 70 °C and your ambient temperature by multiplying by ((70 °C − ambient) ÷ 30 K)<sup>0.543</sup>, with the exponent derived from the Siemens 65 / 85 °C values. Below 24 mm² the curve is extrapolated. <b>Approximate</b> — mounting position and spacing are not considered. Voltage drop uses the IEC 60364-5-52 Annex G design resistivity, ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium). <b>AC (50 Hz):</b> a bar of width = 4 × thickness (thickness up to 10 mm) is assumed; the resistance is multiplied by the skin-effect factor of that thickness, the rating is divided by the square root of that factor, and the reactance of two parallel bars at 60 mm centres is added, x = 0.126 · ln[d ÷ (0.2235 (w + t))] mΩ/m (3-phase, three bars: 0.109 instead of 0.126); voltage drop = I × L × (r cos φ + x sin φ). Proximity effect and harmonics are not considered. <b>DC:</b> resistance only. <b>In trunking / enclosure:</b> the free-air rating is multiplied by the enclosure derating factor you enter; the default 0.80 is an assumption, not a standard value — for manufactured busbar trunking use the manufacturer’s system rating. <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
     lbl_usebrk:'Coordinate with the protective device (Ib ≤ In ≤ Iz)',
     verdict_missing:'Enter {list} to see the result.', miss_v:'the voltage', miss_load:'the load (current or power)', miss_len:'the length', miss_drop:'the maximum voltage drop',
     lbl_pf:'Power factor (cos φ)', kv_in:'Protective device rating (In)',
     in_note:'In is the smallest standard rating equal to or above Ib. IEC 60364-4-43 (433.1) requires Ib ≤ In ≤ Iz, so the cross-section is chosen so that Iz ≥ In. A circuit-breaker is assumed (I2 = 1.45 In); with gG fuses roughly In ≤ 0.9 Iz is also needed.',
-    in_raise:'On the load current alone, {sz} would be enough.',
+    in_raise:'Based on the load current alone, {sz} would be enough.',
     verdict_inmax:'The load current exceeds {m} A, the largest protective device rating included in the calculator — split the load or use parallel circuits',
     title:'Cable Size Calculator',
-    subtitle:'Voltage-drop & current-carrying capacity sizing',
+    subtitle:'Sizing by voltage drop and current-carrying capacity',
     h_inputs:'Inputs', h_result:'Result',
-    lbl_power:'Power (kW)', hint_load:'Enter either current or power (electrical input power); the other is calculated (for AC, set the power factor under Other options).', critical:'✓ Sets the cable size', more:'Other options',
+    lbl_power:'Power (kW)', hint_load:'Enter either the load current or the power (electrical input); the other is calculated. For AC, set the power factor under Other options.', critical:'✓ Sets the cable size', more:'Other options',
     lbl_voltage:'Voltage (V)', lbl_current:'Load current Ib (A)',
     lbl_distance:'Cable length (m)',
     hint_distance:'One way, source to load (not the round trip).',
@@ -376,7 +376,7 @@ const I18N = {
     kv_vdrop:'Voltage-drop limit', kv_amp:'Current-carrying capacity limit',
     kv_iz:'Current-carrying capacity (Iz)', kv_util:'Utilisation (Ib ÷ Iz)',
     kv_loss:'Power loss (approx.)', kv_res:'Resistance (per conductor)',
-    note:'Current-carrying capacity from IEC 60364-5-52 Annex B (the same values as HD 60364-5-52 / ΕΛΟΤ HD 60364-5-52 and BS 7671 Appendix 4), one multi-core cable: two loaded conductors for 1-phase AC or DC, three for 3-phase. <b>Tables B.52.2 – B.52.5</b> (methods A2, B2, C and D1) and <b>B.52.10 – B.52.13</b> (method E); copper and aluminium; PVC 70 °C or XLPE / EPR 90 °C. Air temperature factors Table B.52.14 (reference 30 °C), ground temperature factors Table B.52.15 (reference 20 °C); grouping reduction factors Table B.52.17 (bunched) and, for cables in ducts in the ground, Table B.52.19 (ducts touching). Aluminium from 16 mm². Voltage drop per IEC 60364-5-52 Annex G: u = b (ρ L/S cos φ + λ L sin φ) I, with ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium), λ = 0.08 mΩ/m, b = 2 for 1-phase and DC (no λ for DC) and b = 1 for 3-phase (phase voltage drop), so the line-to-line drop √3 × u is shown. Balanced load; neutral and harmonics are not considered. Sizes 1.5 to 300 mm². <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
+    note:'Current-carrying capacity from IEC 60364-5-52 Annex B (the same values as HD 60364-5-52 / ΕΛΟΤ HD 60364-5-52 and BS 7671 Appendix 4), for one multi-core cable: two loaded conductors for 1-phase AC or DC, three for 3-phase. <b>Tables B.52.2 – B.52.5</b> (methods A2, B2, C and D1) and <b>B.52.10 – B.52.13</b> (method E); copper and aluminium; PVC 70 °C or XLPE / EPR 90 °C. Air temperature factors: Table B.52.14 (reference 30 °C); ground temperature factors: Table B.52.15 (reference 20 °C); grouping reduction factors: Table B.52.17 (bunched) and, for cables in ducts in the ground, Table B.52.19 (ducts touching). Aluminium from 16 mm². Voltage drop per IEC 60364-5-52 Annex G: u = b (ρ L/S cos φ + λ L sin φ) I, with ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium), λ = 0.08 mΩ/m, b = 2 for 1-phase and DC (no λ for DC) and b = 1 for 3-phase (phase voltage drop), so the line-to-line drop √3 × u is shown. Balanced load; neutral and harmonics are not considered. Sizes 1.5 to 300 mm². <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
     verdict_cap:'The required cross-section exceeds {m} mm² — use parallel cables or reduce the load / length',
     lbl_distance_bar:'Busbar length (m)',
   },
