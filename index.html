@@ -255,7 +255,7 @@
       <div class="kv"><span data-i18n="kv_iz">Current-carrying capacity (Iz)</span><span id="capacity">—</span></div>
       <div class="kv" id="inRow"><span data-i18n="kv_in">Protective device rating (In)</span><span id="inVal">—</span></div>
       <div class="kvnote" id="inNote"></div>
-      <div class="kv"><span data-i18n="kv_util">Utilisation (I ÷ Iz)</span><span id="util">—</span></div>
+      <div class="kv"><span data-i18n="kv_util">Utilisation (Ib ÷ Iz)</span><span id="util">—</span></div>
       <div class="bar"><i id="bar" style="width:0%;background:var(--ok)"></i></div>
       <div class="kv"><span data-i18n="kv_loss">Power loss (approx.)</span><span id="loss">—</span></div>
       <div class="kv"><span data-i18n="kv_res">Resistance (per conductor)</span><span id="res">—</span></div>
@@ -352,7 +352,7 @@ const I18N = {
     lbl_usebrk:'Coordinate with the protective device (Ib ≤ In ≤ Iz)',
     verdict_missing:'Enter {list} to see the result.', miss_v:'the voltage', miss_load:'the load (current or power)', miss_len:'the length', miss_drop:'the maximum voltage drop',
     lbl_pf:'Power factor (cos φ)', kv_in:'Protective device rating (In)',
-    in_note:'Smallest standard rating ≥ I. The conductor must carry In (Ib ≤ In ≤ Iz), so the current-carrying capacity limit is worked out with In.',
+    in_note:'In is the smallest standard rating equal to or above Ib. IEC 60364-4-43 (433.1) requires Ib ≤ In ≤ Iz, so the cross-section is chosen so that Iz ≥ In. A circuit-breaker is assumed (I2 = 1.45 In); with gG fuses roughly In ≤ 0.9 Iz is also needed.',
     in_raise:'On the load current alone, {sz} would be enough.',
     verdict_inmax:'The load current exceeds {m} A, the largest protective device rating included — split the load or use parallel circuits',
     title:'Cable Size Calculator',
@@ -374,7 +374,7 @@ const I18N = {
     lbl_ambient:'Ambient temperature (°C)', lbl_ground:'Ground temperature (°C)',
     verdict_temp:'No rating at {t} °C for this insulation — choose a higher-temperature insulation or a cooler route', lbl_grouping:'Number of circuits bunched together', kv_drop:'Voltage drop at selected size', kv_loadV:'Voltage at load',
     kv_vdrop:'Voltage-drop limit', kv_amp:'Current-carrying capacity limit',
-    kv_iz:'Current-carrying capacity (Iz)', kv_util:'Utilisation (I ÷ Iz)',
+    kv_iz:'Current-carrying capacity (Iz)', kv_util:'Utilisation (Ib ÷ Iz)',
     kv_loss:'Power loss (approx.)', kv_res:'Resistance (per conductor)',
     note:'Current-carrying capacity from IEC 60364-5-52 Annex B (the same values as HD 60364-5-52 / ΕΛΟΤ HD 60364-5-52 and BS 7671 Appendix 4), one multi-core cable: two loaded conductors for 1-phase AC or DC, three for 3-phase. <b>Tables B.52.2 – B.52.5</b> (methods A2, B2, C and D1) and <b>B.52.10 – B.52.13</b> (method E); copper and aluminium; PVC 70 °C or XLPE / EPR 90 °C. Air temperature factors Table B.52.14 (reference 30 °C), ground temperature factors Table B.52.15 (reference 20 °C), grouping Table B.52.17 (bunched) and, for cables in ducts in the ground, Table B.52.19 (ducts touching). Aluminium from 16 mm². Voltage drop per IEC 60364-5-52 Annex G: u = b (ρ L/S cos φ + λ L sin φ) I, with ρ = 0.0225 Ω·mm²/m (copper) or 0.036 Ω·mm²/m (aluminium), λ = 0.08 mΩ/m, b = 2 for 1-phase and DC (no λ for DC); for 3-phase the line-to-line drop is shown. Balanced load; neutral and harmonics are not considered. Sizes 1.5 to 300 mm². <b>Frequency:</b> all AC calculations are for 50 Hz. Verify against local regulations.',
     verdict_cap:'Exceeds {m} mm² — use parallel cables or reduce the load / length',
@@ -394,7 +394,7 @@ const I18N = {
     lbl_usebrk:'Επιλογή σε συσχετισμό με τη διάταξη προστασίας (Ib ≤ In ≤ Iz)',
     verdict_missing:'Συμπληρώστε {list} για να εμφανιστεί το αποτέλεσμα.', miss_v:'την τάση', miss_load:'το φορτίο (ένταση ή ισχύ)', miss_len:'το μήκος', miss_drop:'τη μέγιστη πτώση τάσης',
     lbl_pf:'Συντελεστής ισχύος (συνφ)', kv_in:'Ονομαστικό ρεύμα διάταξης προστασίας (In)',
-    in_note:'Η μικρότερη τυποποιημένη τιμή ≥ I. Ο αγωγός πρέπει να φέρει το In (Ib ≤ In ≤ Iz), γι’ αυτό η διατομή κατά το κριτήριο μέγιστου επιτρεπόμενου ρεύματος υπολογίζεται με το In.',
+    in_note:'Το In είναι η μικρότερη τυποποιημένη τιμή που είναι ίση ή μεγαλύτερη από το Ib. Κατά ΕΛΟΤ HD 384, 433.2, πρέπει Ib ≤ In ≤ Iz, οπότε η διατομή επιλέγεται ώστε Iz ≥ In. Προϋποτίθεται αυτόματος διακόπτης (I2 = 1,45 In)· με ασφάλειες gG απαιτείται επιπλέον περίπου In ≤ 0,9 Iz.',
     in_raise:'Με βάση μόνο το ρεύμα φορτίου θα αρκούσε διατομή {sz}.',
     verdict_inmax:'Το ρεύμα φορτίου υπερβαίνει τα {m} A, τη μεγαλύτερη τιμή διάταξης προστασίας που περιλαμβάνεται — μοιράστε το φορτίο ή χρησιμοποιήστε παράλληλα κυκλώματα',
     title:'Υπολογιστής διατομής καλωδίου',
@@ -418,7 +418,7 @@ const I18N = {
     kv_loadV:'Τάση στο φορτίο',
     kv_vdrop:'Κριτήριο πτώσης τάσης', kv_amp:'Κριτήριο μέγιστου επιτρεπόμενου ρεύματος',
     kv_iz:'Μέγιστο επιτρεπόμενο ρεύμα (Iz)',
-    kv_util:'Ποσοστό φόρτισης (I ÷ Iz)',
+    kv_util:'Ποσοστό φόρτισης (Ib ÷ Iz)',
     kv_loss:'Απώλειες ισχύος (περίπου)', kv_res:'Ωμική αντίσταση (ανά αγωγό)',
     note:'Μέγιστο επιτρεπόμενο ρεύμα από το IEC 60364-5-52, Παράρτημα B (ίδιες τιμές με το ΕΛΟΤ HD 60364-5-52 και το BS 7671, Παράρτημα 4), για ένα πολυπολικό καλώδιο: δύο φορτιζόμενοι αγωγοί για μονοφασικό AC ή DC, τρεις για τριφασικό. <b>Πίνακες B.52.2 – B.52.5</b> (τρόποι εγκατάστασης A2, B2, C και D1) και <b>B.52.10 – B.52.13</b> (τρόπος E)· χαλκός και αλουμίνιο· PVC 70 °C ή XLPE / EPR 90 °C. Συντελεστές διόρθωσης θερμοκρασίας αέρα: Πίνακας B.52.14 (αναφορά 30 °C)· θερμοκρασίας εδάφους: Πίνακας B.52.15 (αναφορά 20 °C)· ομαδοποίησης: Πίνακας B.52.17 (σε δέσμη) και, για καλώδια σε σωλήνες στο έδαφος, Πίνακας B.52.19 (σωλήνες σε επαφή). Αλουμίνιο από 16 mm². Πτώση τάσης κατά IEC 60364-5-52, Παράρτημα G: u = b (ρ L/S συνφ + λ L ημφ) I, με ρ = 0,0225 Ω·mm²/m (χαλκός) ή 0,036 Ω·mm²/m (αλουμίνιο), λ = 0,08 mΩ/m, b = 2 για μονοφασικό και DC (για DC χωρίς λ)· για τριφασικό εμφανίζεται η πολική πτώση τάσης. Συμμετρικό φορτίο· δεν λαμβάνονται υπόψη ο ουδέτερος και οι αρμονικές. Διατομές 1,5 έως 300 mm². <b>Συχνότητα:</b> όλοι οι υπολογισμοί AC αφορούν 50 Hz.',
     verdict_cap:'Υπερβαίνει τα {m} mm² — χρησιμοποιήστε παράλληλα καλώδια ή μειώστε το φορτίο / το μήκος',
@@ -635,7 +635,7 @@ function calc(){
   $('loadV').textContent = fmt(V-Vd,1)+' V';
   $('vdropSize').textContent = lab(dropIdx);
   $('ampSize').textContent = lab(aBrkIdx);
-  $('ampIb').textContent = 'I = '+fmt(I,1)+' A'+(useBrk ? ' · In = '+In+' A' : '');
+  $('ampIb').textContent = 'Ib = '+fmt(I,1)+' A'+(useBrk ? ' · In = '+In+' A' : '');
   $('inRow').style.display = useBrk ? '' : 'none';
   $('inNote').style.display = useBrk ? '' : 'none';
   $('inVal').textContent = useBrk ? In+' A' : '—';
