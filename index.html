@@ -129,7 +129,7 @@
         </div>
         <div class="field">
           <label data-i18n="lbl_power">Power at source (kW)</label>
-          <input id="power" type="number" value="7.36" min="0.001" step="any">
+          <input id="power" type="number" value="7.4" min="0.1" step="0.1">
         </div>
       </div>
       <div class="hint" style="margin:-6px 0 13px" data-i18n="hint_load">Enter either the load current or the power at the source; the other is calculated. For AC, set the power factor under Other options.</div>
@@ -460,7 +460,8 @@ let loadSrc = 'A';   // which load field the user typed last: 'A' (current) or '
 // The load current is a whole number of amps: decimal keys are ignored, and a pasted decimal is rounded up.
 $('current').addEventListener('keydown', e=>{ if(['.',',','e','E','+','-'].includes(e.key)) e.preventDefault(); });
 $('current').addEventListener('input', ()=>{ const el=$('current'); if(el.value!=='' && !Number.isInteger(+el.value)) el.value=Math.ceil(+el.value-1e-9); if($('current').value!=='') loadSrc='A'; else if($('power').value!=='') loadSrc='kW'; });
-$('power').addEventListener('input', ()=>{ if($('power').value!=='') loadSrc='kW'; else if($('current').value!=='') loadSrc='A'; });
+// The power has at most one decimal: further digits are cut off as they are typed.
+$('power').addEventListener('input', ()=>{ const el=$('power'); if(/\.\d{2,}/.test(el.value)) el.value=Math.floor(+el.value*10+1e-9)/10; if($('power').value!=='') loadSrc='kW'; else if($('current').value!=='') loadSrc='A'; });
 $('current').addEventListener('blur', ()=>calc());
 $('power').addEventListener('blur', ()=>calc());
 
@@ -517,14 +518,15 @@ function calc(){
   let I = Math.max(0, Math.ceil(+$('current').value-1e-9));
   if(V>0){
     if(loadSrc==='kW'){
-      const p=+$('power').value;
+      const p=Math.round(+$('power').value*10)/10;   // at most one decimal
+      if($('power').value!=='' && String(p)!==$('power').value && !editingEmpty($('power'))) $('power').value = p;
       I = p>0 ? Math.max(1, Math.ceil(p*1000/(phaseK*V*pf)-1e-9)) : 0;   // whole amps, rounded up
       if(!editingEmpty($('current'))) $('current').value = I>0 ? I : '';
     } else {
       const c=Math.max(0, Math.ceil(+$('current').value-1e-9));
       I = c;
       if($('current').value!=='' && String(c)!==$('current').value) $('current').value = c;   // e.g. a decimal from an old saved link
-      if(!editingEmpty($('power'))) $('power').value = c>0 ? +(c*phaseK*V*pf/1000).toFixed(3) : '';
+      if(!editingEmpty($('power'))) $('power').value = c>0 ? +(c*phaseK*V*pf/1000).toFixed(1) : '';
     }
   }
   saveInputs();
