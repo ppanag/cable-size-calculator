@@ -486,11 +486,22 @@ function airFactor(t, tmax){
   }
   return null;
 }
-// Ground factors for buried cables, reference 20 °C (IEC 60364-5-52 Table B.52.15):
-// √((θmax − θg) ÷ (θmax − 20)), which reproduces the tabulated values; lowest row 10 °C.
+// Ground factors for cables in ducts in the ground, reference 20 °C (IEC 60364-5-52 Table B.52.15),
+// the tabulated (rounded) values, interpolated like the air table. Below 10 °C the 10 °C factor is kept;
+// above the last row (60 °C PVC, 80 °C XLPE) there is no rating.
+const GROUND_TBL = {
+  70:[[10,1.10],[15,1.05],[20,1.0],[25,0.95],[30,0.89],[35,0.84],[40,0.77],[45,0.71],[50,0.63],[55,0.55],[60,0.45]],
+  90:[[10,1.07],[15,1.04],[20,1.0],[25,0.96],[30,0.93],[35,0.89],[40,0.85],[45,0.80],[50,0.76],[55,0.71],[60,0.65],
+      [65,0.60],[70,0.53],[75,0.46],[80,0.38]]
+};
 function groundFactor(t, tmax){
-  if(t>=tmax) return null;
-  return Math.sqrt((tmax-Math.max(t,10))/(tmax-20));
+  const tb=GROUND_TBL[tmax];
+  if(t<=tb[0][0]) return tb[0][1];
+  for(let i=0;i<tb.length-1;i++){
+    const [t1,f1]=tb[i],[t2,f2]=tb[i+1];
+    if(t>=t1&&t<=t2) return f1+(f2-f1)*(t-t1)/(t2-t1);
+  }
+  return null;
 }
 
 // Round to d decimals WITHOUT eating significant trailing zeros (100 -> "100", not "1")
