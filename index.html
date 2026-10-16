@@ -158,8 +158,8 @@
           <label data-i18n="lbl_method">Installation method</label>
         <select id="method">
           <option value="A" data-i18n="opt_A">A2 — in conduit in a thermally insulated wall</option>
-          <option value="B" selected data-i18n="opt_B">B2 — in conduit or trunking on a wall</option>
-          <option value="C" data-i18n="opt_C">C — fixed directly to a wall</option>
+          <option value="B" selected data-i18n="opt_B">B2 — in conduit on or in a wall, or in trunking on a wall</option>
+          <option value="C" data-i18n="opt_C">C — fixed on a wall, or in a wall without conduit</option>
           <option value="E" data-i18n="opt_E">E — in free air / on a perforated tray</option>
           <option value="D" data-i18n="opt_D">D1 — in a duct in the ground</option>
         </select>
@@ -185,7 +185,7 @@
         <summary data-i18n="more">Other options</summary>
       <div class="row">
         <div class="field">
-          <label data-i18n="lbl_conductor">Conductor</label>
+          <label data-i18n="lbl_conductor">Conductor material</label>
           <select id="material">
             <option value="cu" data-i18n="opt_cu">Copper</option>
             <option value="al" data-i18n="opt_al">Aluminium</option>
@@ -270,7 +270,7 @@ const SIZES = [1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300];
 // (1.5 … 300 mm²; aluminium from 2.5 mm²). AMP[material][insulation][loaded conductors][method]:
 // 70 = PVC, 90 = XLPE / EPR; 2 loaded = single-phase AC or DC, 3 loaded = three-phase.
 // Methods: A = A2 (multi-core cable in conduit in a thermally insulated wall), B = B2 (multi-core cable in conduit
-// on a wall), C (clipped direct), D = D1 (multi-core cable in a duct in the ground) — Tables B.52.2 to B.52.5;
+// on or in a masonry wall: Table A.52.3 items 5, 60), C (on a wall, or direct in masonry: items 20, 57, 58), D = D1 (multi-core cable in a duct in the ground) — Tables B.52.2 to B.52.5;
 // E (multi-core cable in free air) — Tables B.52.10 to B.52.13. 30 °C air, 20 °C ground.
 const AMP = {
  cu:{
@@ -350,11 +350,11 @@ const I18N = {
     lbl_distance:'Cable length (m)',
     hint_distance:'One way, source to load (not the round trip).',
     lbl_drop:'Maximum voltage drop (%)',
-    lbl_conductor:'Conductor', opt_cu:'Copper', opt_al:'Aluminium',
+    lbl_conductor:'Conductor material', opt_cu:'Copper', opt_al:'Aluminium',
     lbl_method:'Installation method',
     opt_A:'A2 — in conduit in a thermally insulated wall',
-    opt_B:'B2 — in conduit or trunking on a wall',
-    opt_C:'C — fixed directly to a wall',
+    opt_B:'B2 — in conduit on or in a wall, or in trunking on a wall',
+    opt_C:'C — fixed on a wall, or in a wall without conduit',
     opt_E:'E — in free air / on a perforated tray',
     opt_D:'D1 — in a duct in the ground',
     lbl_condtemp:'Insulation (max. conductor temperature)', opt_pvc:'PVC — 70 °C', opt_xlpe:'XLPE / EPR — 90 °C',
@@ -388,11 +388,11 @@ const I18N = {
     lbl_distance:'Μήκος καλωδίου (m)',
     hint_distance:'Μήκος μιας διαδρομής, από την πηγή έως το φορτίο (όχι μετ’ επιστροφής).',
     lbl_drop:'Μέγιστη πτώση τάσης (%)',
-    lbl_conductor:'Αγωγός', opt_cu:'Χαλκός', opt_al:'Αλουμίνιο',
+    lbl_conductor:'Υλικό αγωγού', opt_cu:'Χαλκός', opt_al:'Αλουμίνιο',
     lbl_method:'Τρόπος εγκατάστασης',
     opt_A:'A2 — σε σωλήνα μέσα σε θερμομονωμένο τοίχο',
-    opt_B:'B2 — σε σωλήνα ή κανάλι, επιτοίχια',
-    opt_C:'C — στερεωμένο απευθείας στον τοίχο',
+    opt_B:'B2 — σε σωλήνα επιτοίχια ή εντοιχισμένο, ή σε κανάλι επιτοίχια',
+    opt_C:'C — επιτοίχια, ή εντοιχισμένο χωρίς σωλήνα',
     opt_E:'E — ελεύθερα στον αέρα / σε διάτρητο φορέα καλωδίων',
     opt_D:'D1 — στο έδαφος, μέσα σε σωλήνα',
     lbl_condtemp:'Υλικό μόνωσης (μέγιστη θερμοκρασία αγωγού)', opt_pvc:'PVC — 70 °C', opt_xlpe:'XLPE / EPR — 90 °C',
