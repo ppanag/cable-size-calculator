@@ -455,13 +455,14 @@ $('acdc').addEventListener('change', ()=>{
   }
 });
 let loadSrc = 'A';   // which load field the user typed last: 'A' (current) or 'kW' (power)
-// Typing in a field makes it the source. Clearing a field hands the role to the other one (if it has a
-// value), so the result stays; the emptied field is refilled from it when the user leaves the field.
+// Typing in a field makes it the source. Clearing a field, or reducing it to 0 (e.g. backspacing "0.8"), hands
+// the role to the other one (if it has a value), so the result stays; the emptied field is refilled from it when
+// the user leaves the field.
 // The load current is a whole number of amps: decimal keys are ignored, and a pasted decimal is rounded up.
 $('current').addEventListener('keydown', e=>{ if(['.',',','e','E','+','-'].includes(e.key)) e.preventDefault(); });
-$('current').addEventListener('input', ()=>{ const el=$('current'); if(el.value!=='' && !Number.isInteger(+el.value)) el.value=Math.ceil(+el.value-1e-9); if($('current').value!=='') loadSrc='A'; else if($('power').value!=='') loadSrc='kW'; });
+$('current').addEventListener('input', ()=>{ const el=$('current'); if(el.value!=='' && !Number.isInteger(+el.value)) el.value=Math.ceil(+el.value-1e-9); if(+$('current').value>0) loadSrc='A'; else if(+$('power').value>0) loadSrc='kW'; });
 // The power has at most one decimal: further digits are cut off as they are typed.
-$('power').addEventListener('input', ()=>{ const el=$('power'); if(/\.\d{2,}/.test(el.value)) el.value=Math.floor(+el.value*10+1e-9)/10; if($('power').value!=='') loadSrc='kW'; else if($('current').value!=='') loadSrc='A'; });
+$('power').addEventListener('input', ()=>{ const el=$('power'); if(/\.\d{2,}/.test(el.value)) el.value=Math.floor(+el.value*10+1e-9)/10; if(+$('power').value>0) loadSrc='kW'; else if(+$('current').value>0) loadSrc='A'; });
 $('current').addEventListener('blur', ()=>calc());
 $('power').addEventListener('blur', ()=>calc());
 
@@ -513,8 +514,8 @@ function calc(){
   // Whichever of current / power the user last typed is the source; the other is derived
   // (A = kW × 1000 ÷ (k × V × cos φ), k = 1 or √3 for three-phase; cos φ = 1 for DC).
   const pf = isAC ? Math.min(1, Math.max(0.1, +$('pf').value || 1)) : 1;
-  // A field the user has just emptied and is still editing is not refilled under their cursor.
-  const editingEmpty = el => el.value==='' && document.activeElement===el;
+  // A field the user has just emptied (or reduced to 0) and is still editing is not refilled under their cursor.
+  const editingEmpty = el => !(+el.value>0) && document.activeElement===el;
   let I = Math.max(0, Math.ceil(+$('current').value-1e-9));
   if(V>0){
     if(loadSrc==='kW'){
