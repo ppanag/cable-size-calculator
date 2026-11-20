@@ -1,0 +1,14 @@
+{
+  "name": "cable-size-calculator-tests",
+  "private": true,
+  "description": "Regression and verification tests for index.html (run in jsdom)",
+  "scripts": {
+    "test": "node regression.js && node tables.js && node short_dump.js && python3 short_check.py",
+    "regression": "node regression.js",
+    "tables": "node tables.js",
+    "short": "node short_dump.js && python3 short_check.py"
+  },
+  "dependencies": {
+    "jsdom": "24.1.3"
+  }
+}
